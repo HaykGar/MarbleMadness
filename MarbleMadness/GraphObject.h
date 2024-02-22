@@ -13,7 +13,7 @@ class GraphObject
 {
   public:
 
-  static const int none = -1;
+    static const int none = -1;
 	static const int right = 0;
 	static const int left = 180;
 	static const int up = 90;

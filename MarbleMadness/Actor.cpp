@@ -22,11 +22,22 @@ SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double s
 
 // Player Implementations:
 
-Player::Player(StudentWorld* sp, double startX, double startY, int dir, double size) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, dir, size), m_nPeas(20) {}
+Player::Player(StudentWorld* sp, double startX, double startY, int dir, double size) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, dir, size), m_nPeas(PLAYER_START_PEAS) {}
     // update dir to face right
 
 
-void Player::doSomething()
+void Player::doSomething()      // fix me!
 {
+    if(isDead())
+        return;
+    
     std::cout << "xeris!\n";
 }
+
+
+
+
+// Wall Implementations:
+
+Wall::Wall(StudentWorld* sp, double startX, double startY, double size) : Actor(sp, IID_WALL, startX, startY, none, size) {}
+

@@ -53,6 +53,9 @@ int StudentWorld::init()
                     case Level::player:
                         m_Actors.push_back(new Player(this, x, y));
                         break;
+                    case Level::wall:
+                        m_Actors.push_back(new Wall(this, x, y));
+                        break;
                     default:
                         std::cout << "kliri glux\n";
                 }

@@ -6,15 +6,16 @@
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
 const int START_PLAYER_HEALTH = 20;
+const int PLAYER_START_PEAS = 20;
 
 class StudentWorld;
 
 class Actor : public GraphObject
 {
     public:
-        Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = 0, double size = 1.0);
+        Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
         
-        virtual void doSomething() = 0;
+        virtual void doSomething() {}
         virtual bool getAttacked() { return false; }
         
         // move implemented in graph object
@@ -22,7 +23,7 @@ class Actor : public GraphObject
         
         void die()          { m_isDead = true; }
         bool isDead() const { return m_isDead; }
-
+    
 
     private:
         bool m_isDead;
@@ -35,7 +36,7 @@ class Actor : public GraphObject
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
     public:
-        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = 0, double size = 1.0);
+        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
         
         virtual void SpecificGetAttacked() {}
         
@@ -61,7 +62,7 @@ class KillableActor : public Actor      // Actors that can be "killed" by peas, 
 class SentientActor : public KillableActor  // player and Robots... specific shared behaviors
 {
     public:
-        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = 0, double size = 1.0);
+        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
     
 };
 
@@ -69,7 +70,7 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
 class Player : public SentientActor
 {
 public:
-    Player(StudentWorld* sp, double startX, double startY, int dir = 0, double size = 1.0);
+    Player(StudentWorld* sp, double startX, double startY, int dir = right, double size = 1.0);
     
     virtual void doSomething();
     
@@ -77,5 +78,22 @@ private:
     int m_nPeas;
 };
 
+//class ShotStopActor : public Actor  // Walls and Factories
+//{
+//public:
+//    ShotStopActor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
+//    
+//    
+//};
+
+
+class Wall : public Actor   // public shotStopper ???
+{
+public:
+    Wall(StudentWorld* sp, double startX, double startY, double size = 1.0);
+    
+    
+    
+};
 
 #endif // ACTOR_H_
