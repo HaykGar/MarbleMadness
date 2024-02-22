@@ -2,6 +2,7 @@
 #include "GameConstants.h"
 #include <string>
 #include <iostream>
+#include <cmath>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -17,13 +18,7 @@ StudentWorld::StudentWorld(string assetPath)
 
 StudentWorld::~StudentWorld()
 {
-    long int last = m_Actors.size() - 1;
-    while(last >= 0)
-    {
-        delete m_Actors[last];
-        m_Actors.pop_back();
-        last--;
-    }
+    cleanUp();
 }
 
 
@@ -51,7 +46,7 @@ int StudentWorld::init()
                         // make exit
                         break;
                     case Level::player:
-                        m_Actors.push_back(new Player(this, x, y));
+                        m_player = new Player(this, x, y);
                         break;
                     case Level::wall:
                         m_Actors.push_back(new Wall(this, x, y));
@@ -72,15 +67,56 @@ int StudentWorld::move()
     // This code is here merely to allow the game to build, run, and terminate after you type q
 
     setGameStatText("Game will end when you type q");
+
+    for(size_t i = 0; i < m_Actors.size(); i++){
+        m_Actors[i]->doSomething();
+    }
+    m_player->doSomething();
     
 	return GWSTATUS_CONTINUE_GAME;
 }
 
 void StudentWorld::cleanUp()
 {
+    long int last = m_Actors.size() - 1;
+    while(last >= 0)
+    {
+        delete m_Actors[last];
+        m_Actors.pop_back();
+        last--;
+    }
+    delete m_player;
 }
 
+bool StudentWorld::CanWalk(double x, double y, int dir)
+{
+    
+    switch(dir)
+    {
+        case Actor::up:
+            return SquareWalkable(x, y+1);
+        case Actor::down:
+            return SquareWalkable(x, y-1);
+        case Actor::right:
+            return SquareWalkable(x+1, y);
+        case Actor::left:
+            return SquareWalkable(x-1, y);
+        default:
+            std::cerr << "walking error\n";
+            return false;
+    }
+}
 
+bool StudentWorld::SquareWalkable(double x, double y)
+{
+
+    for(int i = 0; i < m_Actors.size(); i++)
+    {
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isBarrier())
+            return false;
+    }
+    return true;
+}
 
 //void StudentWorld::someFunc()
 //{

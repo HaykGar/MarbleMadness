@@ -7,6 +7,9 @@
 
 const int START_PLAYER_HEALTH = 20;
 const int PLAYER_START_PEAS = 20;
+const double EPSILON = 1e-10;
+
+bool AreEqual(double d1, double d2);
 
 class StudentWorld;
 
@@ -15,14 +18,19 @@ class Actor : public GraphObject
     public:
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
         
-        virtual void doSomething() {}
+        virtual void doSomething() {}   // needs more functionality
         virtual bool getAttacked() { return false; }
         
         // move implemented in graph object
         
         
-        void die()          { m_isDead = true; }
+        void Die()          { m_isDead = true; }
         bool isDead() const { return m_isDead; }
+    
+        bool isBarrier() { return true; }
+    
+        StudentWorld* GetWorld() { return m_world; }
+        
     
 
     private:
@@ -63,6 +71,8 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
 {
     public:
         SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
+    
+        void Move();
     
 };
 

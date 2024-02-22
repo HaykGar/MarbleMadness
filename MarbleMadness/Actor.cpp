@@ -1,9 +1,14 @@
 #include "Actor.h"
 #include "StudentWorld.h"
 #include <iostream>
+#include <cmath>
 
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
 
+bool AreEqual(double d1, double d2)
+{
+    return abs(d1 - d2) < EPSILON;
+}
 
 // Actor Implementations:
 
@@ -19,6 +24,12 @@ KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double st
 
 SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : KillableActor(health, sp, imageID, startX, startY) {}
 
+void SentientActor::Move()
+{    
+    if(GetWorld()->CanWalk(getX(), getY(), getDirection()))
+        moveForward();
+}
+
 
 // Player Implementations:
 
@@ -31,7 +42,37 @@ void Player::doSomething()      // fix me!
     if(isDead())
         return;
     
-    std::cout << "xeris!\n";
+    int ch;
+    if(GetWorld()->getKey(ch))
+    {
+        switch (ch) 
+        {
+            case KEY_PRESS_LEFT:
+                setDirection(left);
+                Move();
+                break;
+            case KEY_PRESS_RIGHT:
+                setDirection(right);
+                Move();
+                break;
+            case KEY_PRESS_DOWN:
+                setDirection(down);
+                Move();
+                break;
+            case KEY_PRESS_UP:
+                setDirection(up);
+                Move();
+                break;
+            case KEY_PRESS_SPACE:
+                // fire pea, m_nPeas--
+                break;
+            case KEY_PRESS_ESCAPE:
+                Die();
+                return;
+            default:
+                break;
+        }
+    }
 }
 
 

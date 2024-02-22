@@ -11,7 +11,6 @@
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
-
 class StudentWorld : public GameWorld
 {
 public:
@@ -20,6 +19,9 @@ public:
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    
+    bool CanWalk(double x, double y, int dir);
+    bool SquareWalkable(double x, double y);
     
 private:
     std::vector<Actor*> m_Actors;
