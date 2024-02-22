@@ -86,6 +86,7 @@ void StudentWorld::cleanUp()
         last--;
     }
     delete m_player;
+    m_player = nullptr;     // some weird double deletion happening
 }
 
 bool StudentWorld::CanWalk(double x, double y, int dir)
