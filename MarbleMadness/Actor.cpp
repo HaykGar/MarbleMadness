@@ -12,7 +12,7 @@ bool AreEqual(double d1, double d2)
 
 // Actor Implementations:
 
-Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp)
+Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isPushable(pushable), m_isDead(false)
 {}
 
 bool Actor::getAttacked()
@@ -34,16 +34,15 @@ void Actor::doSomething()
         return;
     
     doSomethingSpecific();
-    
 }
 
 // KillableActor Implementations:
 
-KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir) : Actor(sp, imageID, startX, startY, dir), m_health(health) {}
+KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir) : Actor(sp, imageID, startX, startY, pushable, dir), m_health(health) {}
 
 bool KillableActor::getAttacked()
 {
-    m_health -= 2;
+    m_health -= PEA_DAMAGE;
     SpecificGetAttacked();
     
     if(m_health <= 0)
@@ -54,7 +53,7 @@ bool KillableActor::getAttacked()
 
 // SentientActor Implementations:
 
-SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir) : KillableActor(health, sp, imageID, startX, startY) {}
+SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir) : KillableActor(health, sp, imageID, startX, startY, false, dir) {}
 
 void SentientActor::SpecificGetAttacked()
 {
@@ -69,6 +68,12 @@ bool SentientActor::Move()
         return true;
     }
     return false;
+}
+
+void SentientActor::Attack()
+{
+    GetWorld()->FireFrom(getX(), getY(), getDirection());
+    PlayFireSound();
 }
 
 // Player Implementations:
@@ -101,8 +106,7 @@ void Player::doSomethingSpecific()      // fix me!
                 Move();
                 break;
             case KEY_PRESS_SPACE:
-                GetWorld()->FireFrom(getX(), getY(), getDirection());
-                PlayFireSound();
+                Attack();
                 break;
             case KEY_PRESS_ESCAPE:
                 Die();

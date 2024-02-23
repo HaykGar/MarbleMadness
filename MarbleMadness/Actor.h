@@ -20,7 +20,7 @@ class StudentWorld;
 class Actor : public GraphObject
 {
     public:
-        Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
+        Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir = right);
         
         virtual void doSomething();   // needs more functionality
         virtual void doSomethingSpecific() = 0;
@@ -35,14 +35,17 @@ class Actor : public GraphObject
         virtual void SpecificDeathAction() {}
     
         virtual bool isBarrier() { return true; }
+        
     
         StudentWorld* GetWorld() { return m_world; }
         
     
 
     private:
-        bool m_isDead;
         StudentWorld* m_world;
+        bool m_isDead;
+        bool m_isPushable;
+
         
         //direction, image ID, visibility provided in graph object
 };
@@ -51,7 +54,7 @@ class Actor : public GraphObject
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
     public:
-        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
+        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir = right);
         
     virtual void SpecificGetAttacked() {}
     virtual bool getAttacked();
@@ -73,7 +76,7 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
     public:
         SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
     
-        void Attack();          // implement once Pea class set up
+        void Attack();          
         bool Move();
 
         virtual void SpecificGetAttacked();
