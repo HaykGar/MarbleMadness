@@ -7,9 +7,13 @@
 
 const int START_PLAYER_HEALTH = 20;
 const int PLAYER_START_PEAS = 20;
+
 const double EPSILON = 1e-10;
 
+const int PEA_DAMAGE = 2;
+
 bool AreEqual(double d1, double d2);
+
 
 class StudentWorld;
 
@@ -18,14 +22,17 @@ class Actor : public GraphObject
     public:
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
         
-        virtual void doSomething() {}   // needs more functionality
-        virtual bool getAttacked() { return false; }
+        virtual void doSomething();   // needs more functionality
+        virtual void doSomethingSpecific() = 0;
+        virtual bool getAttacked();
         
-        // move implemented in graph object
-        
+        virtual int GetXPValue() { return 0; }
         
         void Die()          { m_isDead = true; }
         bool isDead() const { return m_isDead; }
+        virtual void HandleDeath();
+        virtual void PlayDeadSound() {}
+        virtual void SpecificDeathAction() {}
     
         bool isBarrier() { return true; }
     
@@ -46,14 +53,8 @@ class KillableActor : public Actor      // Actors that can be "killed" by peas, 
     public:
         KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
         
-        virtual void SpecificGetAttacked() {}
-        
-        virtual bool getAttacked()
-        {
-            m_health -= 2;
-            SpecificGetAttacked();
-            return true;
-        }
+    virtual void SpecificGetAttacked() {}
+    virtual bool getAttacked();
         
         void SetHealth(int health){
             m_health = health;
@@ -72,21 +73,34 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
     public:
         SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
     
+        void Attack() {} // implement once Pea class set up
+        virtual void SpecificGetAttacked();
+    
+        virtual void PlayAttackedSound() = 0;
+        virtual void PlayFireSound() = 0;
+    
         void Move();
     
 };
 
 
-class Player : public SentientActor
+class Player : public SentientActor     // Handle Player Death
 {
 public:
-    Player(StudentWorld* sp, double startX, double startY, int dir = right, double size = 1.0);
+    Player(StudentWorld* sp, double startX, double startY, double size = 1.0);
     
-    virtual void doSomething();
+    virtual void doSomethingSpecific();
+    virtual void PlayAttackedSound ();
+    virtual void PlayDeadSound ();
+    virtual void PlayFireSound();
     
 private:
     int m_nPeas;
 };
+
+
+// class unkillable actor?
+
 
 //class ShotStopActor : public Actor  // Walls and Factories
 //{
@@ -102,8 +116,7 @@ class Wall : public Actor   // public shotStopper ???
 public:
     Wall(StudentWorld* sp, double startX, double startY, double size = 1.0);
     
-    
-    
+    virtual void doSomethingSpecific() {}
 };
 
 #endif // ACTOR_H_

@@ -13,7 +13,7 @@ GameWorld* createStudentWorld(string assetPath)
 // Students:  Add code to this file, StudentWorld.h, Actor.h, and Actor.cpp
 
 StudentWorld::StudentWorld(string assetPath)
-: GameWorld(assetPath)
+: GameWorld(assetPath), m_player(nullptr)
 {}
 
 StudentWorld::~StudentWorld()
@@ -42,15 +42,17 @@ int StudentWorld::init()
                 {
                     case Level::empty:
                         break;
-                    case Level::exit:
-                        // make exit
+                    case Level::wall:
+                        m_Actors.push_back(new Wall(this, x, y));
                         break;
                     case Level::player:
                         m_player = new Player(this, x, y);
                         break;
-                    case Level::wall:
-                        m_Actors.push_back(new Wall(this, x, y));
+                    case Level::exit:
+                        // make exit
+                        std::cerr << "exit exists\n";
                         break;
+
                     default:
                         std::cout << "kliri glux\n";
                 }

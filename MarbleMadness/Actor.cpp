@@ -15,10 +15,42 @@ bool AreEqual(double d1, double d2)
 Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : GraphObject(imageID, startX, startY, dir, size), m_world(sp)
 {}
 
+bool Actor::getAttacked()
+{
+    return false;
+}
+
+void Actor::HandleDeath()
+{
+    Die();
+    PlayDeadSound();
+    GetWorld()->increaseScore(GetXPValue());
+    SpecificDeathAction();
+}
+
+void Actor::doSomething()
+{
+    if(isDead())
+        return;
+    
+    doSomethingSpecific();
+    
+}
 
 // KillableActor Implementations:
 
 KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : Actor(sp, imageID, startX, startY, dir, size), m_health(health) {}
+
+bool KillableActor::getAttacked()
+{
+    m_health -= 2;
+    SpecificGetAttacked();
+    
+    if(m_health <= 0)
+        HandleDeath();
+    
+    return true;
+}
 
 // SentientActor Implementations:
 
@@ -30,22 +62,25 @@ void SentientActor::Move()
         moveForward();
 }
 
+void SentientActor::SpecificGetAttacked()
+{
+    // IMPLEMENT ME
+    std::cerr << "will implement soon ... \n";
+}
 
 // Player Implementations:
 
-Player::Player(StudentWorld* sp, double startX, double startY, int dir, double size) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, dir, size), m_nPeas(PLAYER_START_PEAS) {}
+Player::Player(StudentWorld* sp, double startX, double startY, double size) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, right, size), m_nPeas(PLAYER_START_PEAS) {}
     // update dir to face right
 
 
-void Player::doSomething()      // fix me!
+void Player::doSomethingSpecific()      // fix me!
 {
-    if(isDead())
-        return;
     
     int ch;
     if(GetWorld()->getKey(ch))
     {
-        switch (ch) 
+        switch (ch)
         {
             case KEY_PRESS_LEFT:
                 setDirection(left);
@@ -76,9 +111,22 @@ void Player::doSomething()      // fix me!
 }
 
 
+void Player::PlayAttackedSound()
+{
+    GetWorld()->playSound(SOUND_PLAYER_IMPACT);
+}
+
+void Player::PlayDeadSound()
+{
+    GetWorld()->playSound(SOUND_PLAYER_DIE);
+}
+
+void Player::PlayFireSound()
+{
+    GetWorld()->playSound(SOUND_PLAYER_FIRE);
+}
 
 
 // Wall Implementations:
 
 Wall::Wall(StudentWorld* sp, double startX, double startY, double size) : Actor(sp, IID_WALL, startX, startY, none, size) {}
-

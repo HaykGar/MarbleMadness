@@ -25,7 +25,7 @@ public:
     
 private:
     std::vector<Actor*> m_Actors;
-    Actor* m_player;        //change to Player*
+    Player* m_player;      //change to Player*
 };
 
 #endif // STUDENTWORLD_H_

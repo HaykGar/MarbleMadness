@@ -35,7 +35,7 @@ GameWorld* createStudentWorld(string assetPath = "");
 
 int main(int argc, char* argv[])
 {
-    string assetPath = assetDirectory;
+    string assetPath = /*assetDirectory*/"/Users/rouben/Desktop/MarbleMadness/DerivedData/Assets";
     if (!assetPath.empty())
     {
         if (!is_directory(assetPath))
