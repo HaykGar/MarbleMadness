@@ -20,8 +20,13 @@ public:
     virtual int move();
     virtual void cleanUp();
     
+    void RemoveDead();
+    
     bool CanWalk(double x, double y, int dir);
     bool SquareWalkable(double x, double y);
+    
+    bool AttackSquare(double x, double y);
+    void FireFrom(double x, double y, int dir);
     
 private:
     std::vector<Actor*> m_Actors;

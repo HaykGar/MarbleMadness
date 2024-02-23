@@ -70,12 +70,37 @@ int StudentWorld::move()
 
     setGameStatText("Game will end when you type q");
 
-    for(size_t i = 0; i < m_Actors.size(); i++){
+    size_t size = m_Actors.size();  // don't give new peas a chance to move their first tick
+    m_player->doSomething();
+    for(size_t i = 0; i < size && !m_player->isDead(); i++){
         m_Actors[i]->doSomething();
     }
-    m_player->doSomething();
+    
+    if(m_player->isDead())
+    {
+        decLives();
+        cleanUp();
+        return GWSTATUS_PLAYER_DIED;
+    }
+    RemoveDead();
     
 	return GWSTATUS_CONTINUE_GAME;
+}
+
+void StudentWorld::RemoveDead()
+{
+    int i = 0;
+    while(i < m_Actors.size())
+    {
+        if(m_Actors[i]->isDead())
+        {
+            delete m_Actors[i];
+            m_Actors[i] = m_Actors[m_Actors.size()-1];
+            m_Actors.pop_back();
+        }
+        else
+            i++;
+    }
 }
 
 void StudentWorld::cleanUp()
@@ -88,7 +113,7 @@ void StudentWorld::cleanUp()
         last--;
     }
     delete m_player;
-    m_player = nullptr;     // some weird double deletion happening
+    m_player = nullptr;     // some weird double deletion happening ?
 }
 
 bool StudentWorld::CanWalk(double x, double y, int dir)
@@ -121,6 +146,39 @@ bool StudentWorld::SquareWalkable(double x, double y)
     return true;
 }
 
+bool StudentWorld::AttackSquare(double x, double y)
+{
+    for(int i = 0; i < m_Actors.size(); i++)
+    {
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isBarrier())    // account for factories
+        {
+            m_Actors[i]->getAttacked();
+            return true;
+        }
+    }
+    return false;
+}
+
+void StudentWorld::FireFrom(double x, double y, int dir)
+{
+    switch(dir)
+    {
+        case Actor::left:
+            m_Actors.push_back(new Pea(this, x-1, y, dir)); // will its move be called on the same tick?
+            break;
+        case Actor::right:
+            m_Actors.push_back(new Pea(this, x+1, y, dir));
+            break;
+        case Actor::up:
+            m_Actors.push_back(new Pea(this, x, y+1, dir));
+            break;
+        case Actor::down:
+            m_Actors.push_back(new Pea(this, x, y-1, dir));
+            break;
+        default:
+            std::cerr << "invalid direction for new pea\n";
+    }
+}
 //void StudentWorld::someFunc()
 //{
 //    Level lev(assetPath());

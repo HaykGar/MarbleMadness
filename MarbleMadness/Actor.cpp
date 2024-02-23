@@ -12,7 +12,7 @@ bool AreEqual(double d1, double d2)
 
 // Actor Implementations:
 
-Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : GraphObject(imageID, startX, startY, dir, size), m_world(sp)
+Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp)
 {}
 
 bool Actor::getAttacked()
@@ -39,7 +39,7 @@ void Actor::doSomething()
 
 // KillableActor Implementations:
 
-KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : Actor(sp, imageID, startX, startY, dir, size), m_health(health) {}
+KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir) : Actor(sp, imageID, startX, startY, dir), m_health(health) {}
 
 bool KillableActor::getAttacked()
 {
@@ -54,13 +54,7 @@ bool KillableActor::getAttacked()
 
 // SentientActor Implementations:
 
-SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir, double size) : KillableActor(health, sp, imageID, startX, startY) {}
-
-void SentientActor::Move()
-{    
-    if(GetWorld()->CanWalk(getX(), getY(), getDirection()))
-        moveForward();
-}
+SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir) : KillableActor(health, sp, imageID, startX, startY) {}
 
 void SentientActor::SpecificGetAttacked()
 {
@@ -68,15 +62,23 @@ void SentientActor::SpecificGetAttacked()
     std::cerr << "will implement soon ... \n";
 }
 
+bool SentientActor::Move()
+{
+    if(GetWorld()->CanWalk(getX(), getY(), getDirection())){
+        moveForward();
+        return true;
+    }
+    return false;
+}
+
 // Player Implementations:
 
-Player::Player(StudentWorld* sp, double startX, double startY, double size) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, right, size), m_nPeas(PLAYER_START_PEAS) {}
+Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, right), m_nPeas(PLAYER_START_PEAS) {}
     // update dir to face right
 
 
 void Player::doSomethingSpecific()      // fix me!
 {
-    
     int ch;
     if(GetWorld()->getKey(ch))
     {
@@ -99,7 +101,8 @@ void Player::doSomethingSpecific()      // fix me!
                 Move();
                 break;
             case KEY_PRESS_SPACE:
-                // fire pea, m_nPeas--
+                GetWorld()->FireFrom(getX(), getY(), getDirection());
+                PlayFireSound();
                 break;
             case KEY_PRESS_ESCAPE:
                 Die();
@@ -129,4 +132,27 @@ void Player::PlayFireSound()
 
 // Wall Implementations:
 
-Wall::Wall(StudentWorld* sp, double startX, double startY, double size) : Actor(sp, IID_WALL, startX, startY, none, size) {}
+Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, none) {}
+
+
+// Pea Implementations
+
+Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, dir)
+{}
+
+void Pea::doSomethingSpecific()
+{
+    if(GetWorld()->AttackSquare(getX(), getY()))
+    {
+        HandleDeath();
+        return;
+    }
+    moveForward();
+    if(GetWorld()->AttackSquare(getX(), getY()) )
+        HandleDeath();
+}
+
+bool Pea::isBarrier()
+{
+    return false;
+}

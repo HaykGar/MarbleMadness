@@ -20,12 +20,12 @@ class StudentWorld;
 class Actor : public GraphObject
 {
     public:
-        Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
+        Actor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
         
         virtual void doSomething();   // needs more functionality
         virtual void doSomethingSpecific() = 0;
-        virtual bool getAttacked();
-        
+        virtual bool getAttacked();     // make void?
+            
         virtual int GetXPValue() { return 0; }
         
         void Die()          { m_isDead = true; }
@@ -34,7 +34,7 @@ class Actor : public GraphObject
         virtual void PlayDeadSound() {}
         virtual void SpecificDeathAction() {}
     
-        bool isBarrier() { return true; }
+        virtual bool isBarrier() { return true; }
     
         StudentWorld* GetWorld() { return m_world; }
         
@@ -51,7 +51,7 @@ class Actor : public GraphObject
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
     public:
-        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
+        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
         
     virtual void SpecificGetAttacked() {}
     virtual bool getAttacked();
@@ -71,23 +71,23 @@ class KillableActor : public Actor      // Actors that can be "killed" by peas, 
 class SentientActor : public KillableActor  // player and Robots... specific shared behaviors
 {
     public:
-        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
+        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
     
-        void Attack() {} // implement once Pea class set up
+        void Attack();          // implement once Pea class set up
+        bool Move();
+
         virtual void SpecificGetAttacked();
     
         virtual void PlayAttackedSound() = 0;
         virtual void PlayFireSound() = 0;
-    
-        void Move();
-    
+        
 };
 
 
 class Player : public SentientActor     // Handle Player Death
 {
 public:
-    Player(StudentWorld* sp, double startX, double startY, double size = 1.0);
+    Player(StudentWorld* sp, double startX, double startY);
     
     virtual void doSomethingSpecific();
     virtual void PlayAttackedSound ();
@@ -114,9 +114,19 @@ private:
 class Wall : public Actor   // public shotStopper ???
 {
 public:
-    Wall(StudentWorld* sp, double startX, double startY, double size = 1.0);
+    Wall(StudentWorld* sp, double startX, double startY);
     
     virtual void doSomethingSpecific() {}
+};
+
+
+class Pea : public Actor    // change parent class later
+{
+public:
+    Pea(StudentWorld* sp, double startX, double startY, int dir);
+    
+    virtual void doSomethingSpecific();
+    virtual bool isBarrier();
 };
 
 #endif // ACTOR_H_
