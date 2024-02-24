@@ -21,16 +21,38 @@ public:
     virtual void cleanUp();
     
     void RemoveDead();
-    
-    bool CanWalk(double x, double y, int dir);
-    bool SquareWalkable(double x, double y);
-    
     bool AttackSquare(double x, double y);
     void FireFrom(double x, double y, int dir);
+
+    
+    bool CanWalk(double x, double y, int dir);
+    void ConvertCoords(double x, double y, int& row, int& col);
+    
+    // GameMap wrappers essentially
+    bool SquareWalkable(double x, double y);
+    void LeaveSquare(double x, double y, int status);
+    void OccupySquare(double x, double y, int status);
+    bool SquareAttackable(double x, double y);
     
 private:
     std::vector<Actor*> m_Actors;
     Player* m_player;      //change to Player*
+    // need to update move methods accordingly
+    struct GameMap      // CAREFUL to convert row col to x y appropriately, HANDLE MOVE UPDATING GRID
+    {
+        GameMap();
+        ~GameMap();
+        void CleanUpMap();
+        void OccupySquare(int x, int y, int status);
+        void LeaveSquare(int x, int y, int status);
+        bool SquareWalkable(int x, int y);
+        bool SquareAttackable(int x, int y);
+        std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
+        /*
+         empty list at a position means that square is empty, otherwise status code of objects in lists tell about walk/push/shoot-ability
+         */
+    };
+    GameMap m_grid;
 };
 
 #endif // STUDENTWORLD_H_

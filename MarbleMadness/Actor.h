@@ -2,16 +2,25 @@
 #define ACTOR_H_
 
 #include "GraphObject.h"
+#include <iostream>
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
 const int START_PLAYER_HEALTH = 20;
 const int PLAYER_START_PEAS = 20;
-
-const double EPSILON = 1e-10;
-
 const int PEA_DAMAGE = 2;
 
+enum OcStatus
+{
+    OC_ERROR = -1,
+    OC_NON_BARRIER,             // goodies, exit, peas
+    OC_BARRIER_NON_SHOTSTOP,    // pit
+    OC_KILLABLE_SHOTSTOP,       // marbles, player, robots
+    OC_UNKILLABLE_SHOTSTOP,     // walls and factories
+    END_NOT_A_STATUS            // end of enum, not a valid status
+};
+
+const double EPSILON = 1e-10;
 bool AreEqual(double d1, double d2);
 
 
@@ -20,13 +29,14 @@ class StudentWorld;
 class Actor : public GraphObject
 {
     public:
-        Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir = right);
+        Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir);
         
         virtual void doSomething();   // needs more functionality
         virtual void doSomethingSpecific() = 0;
         virtual bool getAttacked();     // make void?
+        void MoveOne();
             
-        virtual int GetXPValue() { return 0; }
+        virtual int GetXPValue() { return 0; }  // add data member instead?
         
         void Die()          { m_isDead = true; }
         bool isDead() const { return m_isDead; }
@@ -34,8 +44,7 @@ class Actor : public GraphObject
         virtual void PlayDeadSound() {}
         virtual void SpecificDeathAction() {}
     
-        virtual bool isBarrier() { return true; }
-        
+        int GetOcStatus();
     
         StudentWorld* GetWorld() { return m_world; }
         
@@ -45,6 +54,7 @@ class Actor : public GraphObject
         StudentWorld* m_world;
         bool m_isDead;
         bool m_isPushable;
+        int m_occupancyStatus;
 
         
         //direction, image ID, visibility provided in graph object
@@ -54,7 +64,7 @@ class Actor : public GraphObject
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
     public:
-        KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir = right);
+    KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir);
         
     virtual void SpecificGetAttacked() {}
     virtual bool getAttacked();
@@ -74,7 +84,7 @@ class KillableActor : public Actor      // Actors that can be "killed" by peas, 
 class SentientActor : public KillableActor  // player and Robots... specific shared behaviors
 {
     public:
-        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir = right);
+        SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir);
     
         void Attack();          
         bool Move();

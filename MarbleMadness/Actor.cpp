@@ -1,7 +1,6 @@
 #include "Actor.h"
 #include "StudentWorld.h"
-#include <iostream>
-#include <cmath>
+
 
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
 
@@ -12,7 +11,7 @@ bool AreEqual(double d1, double d2)
 
 // Actor Implementations:
 
-Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isPushable(pushable), m_isDead(false)
+Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isPushable(pushable), m_isDead(false), m_occupancyStatus(ocStat)
 {}
 
 bool Actor::getAttacked()
@@ -36,9 +35,22 @@ void Actor::doSomething()
     doSomethingSpecific();
 }
 
+int Actor::GetOcStatus()
+{
+    return m_occupancyStatus;
+}
+
+void Actor::MoveOne()
+{
+    StudentWorld* world = GetWorld();
+    world->LeaveSquare(getX(), getY(), GetOcStatus());
+    moveForward();
+    world->OccupySquare(getX(), getY(), GetOcStatus());
+}
+
 // KillableActor Implementations:
 
-KillableActor::KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int dir) : Actor(sp, imageID, startX, startY, pushable, dir), m_health(health) {}
+KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir) : Actor(sp, imageID, startX, startY, pushable, ocStat, dir), m_health(health) {}
 
 bool KillableActor::getAttacked()
 {
@@ -53,7 +65,7 @@ bool KillableActor::getAttacked()
 
 // SentientActor Implementations:
 
-SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir) : KillableActor(health, sp, imageID, startX, startY, false, dir) {}
+SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : KillableActor(health, sp, imageID, startX, startY, false, ocStat, dir) {}
 
 void SentientActor::SpecificGetAttacked()
 {
@@ -63,8 +75,9 @@ void SentientActor::SpecificGetAttacked()
 
 bool SentientActor::Move()
 {
-    if(GetWorld()->CanWalk(getX(), getY(), getDirection())){
-        moveForward();
+    if(GetWorld()->CanWalk(getX(), getY(), getDirection()))
+    {
+        MoveOne();
         return true;
     }
     return false;
@@ -78,7 +91,7 @@ void SentientActor::Attack()
 
 // Player Implementations:
 
-Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, right), m_nPeas(PLAYER_START_PEAS) {}
+Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, OC_KILLABLE_SHOTSTOP, right), m_nPeas(PLAYER_START_PEAS) {}
     // update dir to face right
 
 
@@ -136,12 +149,11 @@ void Player::PlayFireSound()
 
 // Wall Implementations:
 
-Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, none) {}
-
+Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, false, OC_UNKILLABLE_SHOTSTOP, none) {}
 
 // Pea Implementations
 
-Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, dir)
+Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, false, OC_NON_BARRIER, dir)
 {}
 
 void Pea::doSomethingSpecific()
@@ -151,7 +163,7 @@ void Pea::doSomethingSpecific()
         HandleDeath();
         return;
     }
-    moveForward();
+    MoveOne();
     if(GetWorld()->AttackSquare(getX(), getY()) )
         HandleDeath();
 }

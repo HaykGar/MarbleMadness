@@ -43,10 +43,15 @@ int StudentWorld::init()
                     case Level::empty:
                         break;
                     case Level::wall:
-                        m_Actors.push_back(new Wall(this, x, y));
+                    {
+                        Wall* wall = new Wall(this, x, y);
+                        m_Actors.push_back(wall);
+                        OccupySquare(wall->getX(), wall->getY(), wall->GetOcStatus());
                         break;
+                    }
                     case Level::player:
                         m_player = new Player(this, x, y);
+                        OccupySquare(m_player->getX(), m_player->getY(), m_player->GetOcStatus());
                         break;
                     case Level::exit:
                         // make exit
@@ -54,7 +59,7 @@ int StudentWorld::init()
                         break;
 
                     default:
-                        std::cout << "kliri glux\n";
+                        std::cout << "ankap gyada\n";
                 }
             }
         }
@@ -114,11 +119,19 @@ void StudentWorld::cleanUp()
     }
     delete m_player;
     m_player = nullptr;     // some weird double deletion happening ?
+    
+    m_grid.CleanUpMap();
+}
+
+
+void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)
+{
+    col = std::round(x);
+    row = VIEW_HEIGHT-1-std::round(y);
 }
 
 bool StudentWorld::CanWalk(double x, double y, int dir)
 {
-    
     switch(dir)
     {
         case Actor::up:
@@ -130,94 +143,171 @@ bool StudentWorld::CanWalk(double x, double y, int dir)
         case Actor::left:
             return SquareWalkable(x-1, y);
         default:
-            std::cerr << "walking error\n";
+            std::cerr << "walking error, invalid direction\n";
             return false;
     }
-}
-
-bool StudentWorld::SquareWalkable(double x, double y)
-{
-
-    for(int i = 0; i < m_Actors.size(); i++)
-    {
-        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isBarrier())
-            return false;
-    }
-    return true;
 }
 
 bool StudentWorld::AttackSquare(double x, double y)
 {
+    
+    if(!SquareAttackable(x, y))
+        return false;   // no point iterating in next step
+    
     for(int i = 0; i < m_Actors.size(); i++)
     {
-        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isBarrier())    // account for factories
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
         {
             m_Actors[i]->getAttacked();
             return true;
         }
     }
+    std::cerr << "Unexpected behavior, no actors attacked\n";
     return false;
 }
 
 void StudentWorld::FireFrom(double x, double y, int dir)
 {
+    Pea* pea = nullptr;
     switch(dir)
     {
         case Actor::left:
-            m_Actors.push_back(new Pea(this, x-1, y, dir)); // will its move be called on the same tick?
+            pea = new Pea(this, x-1, y, dir);
             break;
         case Actor::right:
-            m_Actors.push_back(new Pea(this, x+1, y, dir));
+            pea = new Pea(this, x+1, y, dir);
             break;
         case Actor::up:
-            m_Actors.push_back(new Pea(this, x, y+1, dir));
+            pea = new Pea(this, x, y+1, dir);
             break;
         case Actor::down:
-            m_Actors.push_back(new Pea(this, x, y-1, dir));
+            pea = new Pea(this, x, y-1, dir);
             break;
         default:
             std::cerr << "invalid direction for new pea\n";
+            return;
     }
+    
+    m_Actors.push_back(pea);
+    OccupySquare(pea->getX(), pea->getY(), pea->GetOcStatus());
 }
-//void StudentWorld::someFunc()
-//{
-//    Level lev(assetPath());
-//    Level::LoadResult result = lev.loadLevel("level00.txt");
-//    if (result == Level::load_fail_file_not_found)
-//            cerr << "Could not find level00.txt data file\n";
-//    else if (result == Level::load_fail_bad_format)
-//        cerr << "Your level was improperly formatted\n";
-//    else if (result == Level::load_success)
-//    {
-//        cerr << "Successfully loaded level\n";
-//        Level::MazeEntry ge = lev.getContentsOf(5,10); // x=5, y=10
-//        switch (ge)
-//        {
-//            case Level::empty:
-//                cout << "5,10 is empty\n";
-//                break;
-//            case Level::exit:
-//                cout << "5,10 is where the exit is\n";
-//                break;
-//            case Level::player:
-//                cout << "5,10 is where the player starts\n";
-//                break;
-//            case Level::horiz_ragebot:
-//                cout << "5,10 starts with a horiz. RageBot\n";
-//                break;
-//            case Level::vert_ragebot:
-//                cout << "5,10 starts with a vertical RageBot\n";
-//                break;
-//            case Level::thiefbot_factory:
-//                cout << "5,10 holds a ThiefBot factory\n";
-//                break;
-//            case Level::enraged_thiefbot_factory:
-//                cout << "5,10 holds an enraged ThiefBot factory\n";
-//                break;
-//            case Level::wall:
-//                22
-//                cout << "Location 5,10 holds a wall\n";
-//                break;
-//        }
-//    }
-//}
+
+// GameMap wrappers
+
+void StudentWorld::LeaveSquare(double x, double y, int status)
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    m_grid.LeaveSquare(col, row, status);
+}
+
+void StudentWorld::OccupySquare(double x, double y, int status)
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    m_grid.OccupySquare(col, row, status);
+}
+
+bool StudentWorld::SquareWalkable(double x, double y)
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    return m_grid.SquareWalkable(col, row);
+}
+
+bool StudentWorld::SquareAttackable(double x, double y)
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    return m_grid.SquareAttackable(col, row);
+}
+
+// GameMap struct implementations
+
+StudentWorld::GameMap::GameMap()
+{
+    for(int i = 0; i < VIEW_HEIGHT; i++)
+        for(int j = 0; j < VIEW_WIDTH; j++)
+            m_occupancyMap[i][j] = new std::list<int>;
+}
+
+StudentWorld::GameMap::~GameMap()
+{
+    for(int i = 0; i < VIEW_HEIGHT; i++)
+        for(int j = 0; j < VIEW_WIDTH; j++)
+            delete m_occupancyMap[i][j];
+}
+
+void StudentWorld::GameMap::CleanUpMap()
+{
+    for(int i = 0; i < VIEW_HEIGHT; i++)
+        for(int j = 0; j < VIEW_WIDTH; j++)
+            m_occupancyMap[i][j]->clear();
+}
+
+void StudentWorld::GameMap::LeaveSquare(int col, int row, int status)
+{
+    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT || (status <= OC_ERROR || status >= END_NOT_A_STATUS) ) // status not in enum
+    {
+        std::cerr << "Error leaving square, invalid coordinates or status\n";
+        return;
+    }
+    
+    std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    for(; i != m_occupancyMap[row][col]->end(); i++)    // won't enter loop if list empty
+    {
+        if(*i == status)
+        {
+            m_occupancyMap[row][col]->erase(i);
+            return;
+        }
+    }
+    
+    std::cerr << "Error, nothing left\n";
+}
+
+void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
+{
+    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT || (status <= OC_ERROR || status >= END_NOT_A_STATUS) ) // status not in enum
+    {
+        std::cerr << "Error occupying square, invalid coordinates or status\n";
+        return;
+    }
+    
+    m_occupancyMap[row][col]->push_back(status);
+}
+
+bool StudentWorld::GameMap::SquareWalkable(int col, int row)
+{
+    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT ) // status not in enum
+    {
+        std::cerr << "Error, invalid coordinates\n";
+        return false;
+    }
+    
+    std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    for(; i != m_occupancyMap[row][col]->end(); i++)
+    {
+        if(*i != OC_NON_BARRIER)
+            return false;
+    }
+    return true;    // loop didn't execute or only goodies
+}
+
+bool StudentWorld::GameMap::SquareAttackable(int col, int row)
+{
+    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT)
+    {
+        std::cerr << "invalid coordinates passed to SquareAttackable()\n";
+        return false;
+    }
+    
+    list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    for(; i != m_occupancyMap[row][col]->end(); i++)
+    {
+        if (*i == OC_KILLABLE_SHOTSTOP || *i == OC_UNKILLABLE_SHOTSTOP)
+            return true;
+    }
+    return false;
+    
+}
