@@ -14,7 +14,7 @@ enum OcStatus
 {
     OC_ERROR = -1,
     OC_NON_BARRIER,             // goodies, exit, peas
-    OC_BARRIER_NON_SHOTSTOP,    // pit
+    OC_BARRIER_NON_SHOTSTOP,    // pit, pushable
     OC_KILLABLE_SHOTSTOP,       // marbles, player, robots
     OC_UNKILLABLE_SHOTSTOP,     // walls and factories
     END_NOT_A_STATUS            // end of enum, not a valid status
@@ -29,32 +29,29 @@ class StudentWorld;
 class Actor : public GraphObject
 {
     public:
-        Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir);
+        Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir);
         
         virtual void doSomething();   // needs more functionality
         virtual void doSomethingSpecific() = 0;
         virtual bool getAttacked();     // make void?
         void MoveOne();
             
-        virtual int GetXPValue() { return 0; }  // add data member instead?
-        
-        void Die()          { m_isDead = true; }
-        bool isDead() const { return m_isDead; }
+        int GetOcStatus() const;
+        StudentWorld* GetWorld() const;
+        virtual int GetXPValue() const;
+        bool isDead() const;
+        void Die();
         virtual void HandleDeath();
-        virtual void PlayDeadSound() {}
+        virtual void PlayDeadSound() const {}
         virtual void SpecificDeathAction() {}
-    
-        int GetOcStatus();
-    
-        StudentWorld* GetWorld() { return m_world; }
         
     
 
     private:
         StudentWorld* m_world;
         bool m_isDead;
-        bool m_isPushable;
         int m_occupancyStatus;
+        int m_XPVal;
 
         
         //direction, image ID, visibility provided in graph object
@@ -64,7 +61,7 @@ class Actor : public GraphObject
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
     public:
-    KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir);
+    KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir);
         
     virtual void SpecificGetAttacked() {}
     virtual bool getAttacked();
@@ -91,8 +88,8 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
 
         virtual void SpecificGetAttacked();
     
-        virtual void PlayAttackedSound() = 0;
-        virtual void PlayFireSound() = 0;
+        virtual void PlayAttackedSound() const = 0;
+        virtual void PlayFireSound() const = 0;
         
 };
 
@@ -103,9 +100,9 @@ public:
     Player(StudentWorld* sp, double startX, double startY);
     
     virtual void doSomethingSpecific();
-    virtual void PlayAttackedSound ();
-    virtual void PlayDeadSound ();
-    virtual void PlayFireSound();
+    virtual void PlayAttackedSound () const;
+    virtual void PlayDeadSound() const;
+    virtual void PlayFireSound() const;
     
 private:
     int m_nPeas;

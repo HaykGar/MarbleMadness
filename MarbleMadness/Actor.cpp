@@ -11,20 +11,12 @@ bool AreEqual(double d1, double d2)
 
 // Actor Implementations:
 
-Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isPushable(pushable), m_isDead(false), m_occupancyStatus(ocStat)
+Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat)
 {}
 
 bool Actor::getAttacked()
 {
     return false;
-}
-
-void Actor::HandleDeath()
-{
-    Die();
-    PlayDeadSound();
-    GetWorld()->increaseScore(GetXPValue());
-    SpecificDeathAction();
 }
 
 void Actor::doSomething()
@@ -35,9 +27,37 @@ void Actor::doSomething()
     doSomethingSpecific();
 }
 
-int Actor::GetOcStatus()
+int Actor::GetOcStatus() const
 {
     return m_occupancyStatus;
+}
+
+int Actor::GetXPValue() const
+{
+    return m_XPVal;
+}
+
+StudentWorld* Actor::GetWorld() const
+{ 
+    return m_world;
+}
+
+bool Actor::isDead() const
+{
+    return m_isDead;
+}
+
+void Actor::Die()
+{
+    m_isDead = true;
+}
+
+void Actor::HandleDeath()
+{
+    Die();
+    PlayDeadSound();
+    GetWorld()->increaseScore(GetXPValue());
+    SpecificDeathAction();
 }
 
 void Actor::MoveOne()
@@ -50,7 +70,7 @@ void Actor::MoveOne()
 
 // KillableActor Implementations:
 
-KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, bool pushable, int ocStat, int dir) : Actor(sp, imageID, startX, startY, pushable, ocStat, dir), m_health(health) {}
+KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : Actor(sp, imageID, startX, startY, ocStat, dir), m_health(health) {}
 
 bool KillableActor::getAttacked()
 {
@@ -65,7 +85,7 @@ bool KillableActor::getAttacked()
 
 // SentientActor Implementations:
 
-SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : KillableActor(health, sp, imageID, startX, startY, false, ocStat, dir) {}
+SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : KillableActor(health, sp, imageID, startX, startY, ocStat, dir) {}
 
 void SentientActor::SpecificGetAttacked()
 {
@@ -92,7 +112,6 @@ void SentientActor::Attack()
 // Player Implementations:
 
 Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, OC_KILLABLE_SHOTSTOP, right), m_nPeas(PLAYER_START_PEAS) {}
-    // update dir to face right
 
 
 void Player::doSomethingSpecific()      // fix me!
@@ -130,18 +149,17 @@ void Player::doSomethingSpecific()      // fix me!
     }
 }
 
-
-void Player::PlayAttackedSound()
+void Player::PlayAttackedSound() const
 {
     GetWorld()->playSound(SOUND_PLAYER_IMPACT);
 }
 
-void Player::PlayDeadSound()
+void Player::PlayDeadSound() const
 {
     GetWorld()->playSound(SOUND_PLAYER_DIE);
 }
 
-void Player::PlayFireSound()
+void Player::PlayFireSound() const
 {
     GetWorld()->playSound(SOUND_PLAYER_FIRE);
 }
@@ -149,11 +167,11 @@ void Player::PlayFireSound()
 
 // Wall Implementations:
 
-Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, false, OC_UNKILLABLE_SHOTSTOP, none) {}
+Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, OC_UNKILLABLE_SHOTSTOP, none) {}
 
 // Pea Implementations
 
-Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, false, OC_NON_BARRIER, dir)
+Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, OC_NON_BARRIER, dir)
 {}
 
 void Pea::doSomethingSpecific()
