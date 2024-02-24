@@ -33,7 +33,7 @@ public:
     void LeaveSquare(double x, double y, int status);
     void OccupySquare(double x, double y, int status);
     bool SquareAttackable(double x, double y);
-    
+        
 private:
     std::vector<Actor*> m_Actors;
     Player* m_player;      //change to Player*
@@ -43,6 +43,11 @@ private:
         GameMap();
         ~GameMap();
         void CleanUpMap();
+        
+        bool InvalidCoords(int col, int row);
+        bool InvalidStatus(int status);
+        bool InvalidStatusOrCoords(int col, int row, int status);
+        
         void OccupySquare(int x, int y, int status);
         void LeaveSquare(int x, int y, int status);
         bool SquareWalkable(int x, int y);

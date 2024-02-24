@@ -245,11 +245,36 @@ void StudentWorld::GameMap::CleanUpMap()
             m_occupancyMap[i][j]->clear();
 }
 
+bool StudentWorld::GameMap::InvalidCoords(int col, int row)
+{
+    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT)
+    {
+        std::cerr << "invalid coordinates\n";
+        return true;
+    }
+    return false;
+}
+
+bool StudentWorld::GameMap::InvalidStatus(int status)
+{
+    if (status <= OC_ERROR || status >= END_NOT_A_STATUS)
+    {
+        std::cerr << "invalid status\n";
+        return true;
+    }
+    return false;
+}
+
+bool StudentWorld::GameMap::InvalidStatusOrCoords(int col, int row, int status)
+{
+    return InvalidStatus(status) || InvalidCoords(col, row);
+}
+
 void StudentWorld::GameMap::LeaveSquare(int col, int row, int status)
 {
-    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT || (status <= OC_ERROR || status >= END_NOT_A_STATUS) ) // status not in enum
+    if ( InvalidStatusOrCoords(col, row, status) )
     {
-        std::cerr << "Error leaving square, invalid coordinates or status\n";
+        std::cerr << "Error leaving square";
         return;
     }
     
@@ -263,14 +288,14 @@ void StudentWorld::GameMap::LeaveSquare(int col, int row, int status)
         }
     }
     
-    std::cerr << "Error, nothing left\n";
+    std::cerr << "Error, leaving empty square\n";
 }
 
 void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
 {
-    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT || (status <= OC_ERROR || status >= END_NOT_A_STATUS) ) // status not in enum
+    if ( InvalidStatusOrCoords(col, row, status) )
     {
-        std::cerr << "Error occupying square, invalid coordinates or status\n";
+        std::cerr << "Error occupying square\n";
         return;
     }
     
@@ -279,9 +304,9 @@ void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
 
 bool StudentWorld::GameMap::SquareWalkable(int col, int row)
 {
-    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT ) // status not in enum
+    if ( InvalidCoords(col, row) )
     {
-        std::cerr << "Error, invalid coordinates\n";
+        std::cerr << "Error walking\n";
         return false;
     }
     
@@ -309,5 +334,4 @@ bool StudentWorld::GameMap::SquareAttackable(int col, int row)
             return true;
     }
     return false;
-    
 }
