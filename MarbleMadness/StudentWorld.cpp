@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -71,10 +72,6 @@ int StudentWorld::init()
                         AddActor(newActor);
                         break;
                     }
-                    case Level::exit:
-                        newActor = new Exit(this, x, y);
-                        AddActor(newActor);
-                        break;
                     case Level::crystal:
                         m_nCrystals++;
                         newActor = new Crystal(this, x, y);
@@ -88,8 +85,16 @@ int StudentWorld::init()
                         newActor = new ExtraLifeGoodie(this, x, y);
                         AddActor(newActor);
                         break;
+                    case Level::marble:
+                        newActor = new Marble(this, x, y);
+                        AddActor(newActor);
+                        break;
                     case Level::pit:
                         newActor = new Pit(this, x, y);
+                        AddActor(newActor);
+                        break;
+                    case Level::exit:
+                        newActor = new Exit(this, x, y);
                         AddActor(newActor);
                         break;
                     case Level::player:
@@ -194,6 +199,40 @@ void StudentWorld::UpdateGameText() // inefficient, fix later
     setGameStatText(text.str());
 }
 
+bool StudentWorld::TryToPush()
+{
+    double x, y;
+    switch (m_player->getDirection())
+    {
+        case Actor::right:
+            x = m_player->getX() + 1;
+            y = m_player->getY();
+            break;
+        case Actor::left:
+            x = m_player->getX() - 1;
+            y = m_player->getY();
+            break;
+        case Actor::up:
+            x = m_player->getX();
+            y = m_player->getY() + 1;
+            break;
+        case Actor::down:
+            x = m_player->getX();
+            y = m_player->getY() - 1;
+            break;
+        default:
+            std::cerr << "Player has invalid direction\n";
+            return false;
+    }
+    
+    for(int i = 0; i < m_Actors.size(); i++)
+    {
+        if(m_Actors[i]->Pushable() && AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) )
+            return m_Actors[i]->Push(m_player->getDirection());
+    }
+    return false;
+}
+
 void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)
 {
     col = std::round(x);
@@ -219,6 +258,15 @@ bool StudentWorld::CanWalk(Actor* a)
         default:
             std::cerr << "walking error, invalid direction\n";
             return false;
+    }
+}
+
+void StudentWorld::SwallowMarble(double x, double y)
+{
+    for(int i = 0; i < m_Actors.size(); i++)
+    {
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() == Actor::OC_KILLABLE_SHOTSTOP) )
+            m_Actors[i]->HandleDeath();
     }
 }
 
@@ -299,6 +347,27 @@ bool StudentWorld::SquareWalkable(double x, double y)
     ConvertCoords(x, y, row, col);
     return m_grid.SquareWalkable(col, row);
 }
+
+bool StudentWorld::SquarePushable(double x, double y)
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    return m_grid.SquarePushable(col, row);
+}
+
+bool StudentWorld::MarbleWithPit(Pit* p)
+{
+    int row, col;
+    ConvertCoords(p->getX(), p->getY(), row, col);
+    if(m_grid.MarbleWithPit(col, row))
+    {
+        SwallowMarble(p->getX(), p->getY());
+        return true;
+    }
+    else
+        return false;
+}
+
 
 bool StudentWorld::SquareAttackable(double x, double y)
 {
@@ -385,6 +454,50 @@ void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
     }
     
     m_occupancyMap[row][col]->push_back(status);
+}
+
+bool StudentWorld::GameMap::SquarePushable(int col, int row)
+{
+    if ( InvalidCoords(col, row) )
+    {
+        std::cerr << "Error pushing, invalid coordinates\n";
+        return false;
+    }
+    
+    std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    if (i == m_occupancyMap[row][col]->end())   //empty
+        return true;
+    
+    for(; i != m_occupancyMap[row][col]->end(); i++)
+    {
+        if(*i == Actor::OC_BARRIER_NON_SHOTSTOP)    // pit
+            return true;
+    }
+    return false;
+}
+
+bool StudentWorld::GameMap::MarbleWithPit(int col, int row)
+{
+    
+    if ( InvalidCoords(col, row) )
+    {
+        std::cerr << "Error, invalid coordinates\n";
+        return false;
+    }
+    
+    std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    if (i == m_occupancyMap[row][col]->end())
+    {
+        std::cerr << "invalid function call, no pit at this location\n";
+        return false;
+    }
+    
+    for(; i != m_occupancyMap[row][col]->end(); i++)
+    {
+        if(*i == Actor::OC_KILLABLE_SHOTSTOP)
+            return true; // marble only killable actor allowed to share spot with pit
+    }
+    return false;
 }
 
 bool StudentWorld::GameMap::SquareWalkable(int col, int row)

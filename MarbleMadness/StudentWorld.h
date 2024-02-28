@@ -49,6 +49,9 @@ public:
     bool SquareWalkable(double x, double y);
     void LeaveSquare(Actor* a);
     void OccupySquare(Actor* a);
+    bool SquarePushable(double x, double y);
+    bool TryToPush();
+    bool MarbleWithPit(Pit* p);
     bool SquareAttackable(double x, double y);
 
 private:
@@ -67,16 +70,20 @@ private:
         bool InvalidStatus(int status);
         bool InvalidStatusOrCoords(int col, int row, int status);
         
-        void OccupySquare(int x, int y, int status);
-        void LeaveSquare(int x, int y, int status);
-        bool SquareWalkable(int x, int y);
-        bool SquareAttackable(int x, int y);
+        void OccupySquare(int col, int row, int status);
+        void LeaveSquare(int col, int row, int status);
+        bool SquareWalkable(int col, int row);
+        bool SquarePushable(int col, int row);
+        bool MarbleWithPit(int col, int row);
+        bool SquareAttackable(int col, int row);
         std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
         /*
          empty list at a position means that square is empty, otherwise status code of objects in lists tell about walk/push/shoot-ability
          */
     };
     GameMap m_grid;
+    
+    void SwallowMarble(double x, double y);
 };
 
 inline void StudentWorld::DecCrystals()

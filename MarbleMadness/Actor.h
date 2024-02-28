@@ -7,6 +7,7 @@
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
 const int START_PLAYER_HEALTH = 20;
+const int MARBLE_HP = 10;
 
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
@@ -30,7 +31,7 @@ class Actor : public GraphObject
     public:
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
         
-        int doSomething();   // needs more functionality
+        int doSomething();
         virtual int doSomethingSpecific() = 0;
         virtual bool getAttacked();     // make void?
         void MoveOne();
@@ -44,11 +45,14 @@ class Actor : public GraphObject
         virtual void PlayDeadSound() const {}
         virtual void SpecificDeathAction() {}
     
-        enum OcStatus
+        virtual bool Pushable() const;
+        virtual bool Push(int dir = none);
+    
+        enum OcStatus    // important: everything after non_shotstop stops peas
         {
             OC_ERROR = -1,
             OC_NON_BARRIER,             // goodies, exit, peas
-            OC_BARRIER_NON_SHOTSTOP,    // pit (pushable)
+            OC_BARRIER_NON_SHOTSTOP,    // pit (can push into)
             OC_KILLABLE_SHOTSTOP,       // marbles, player, robots
             OC_UNKILLABLE_SHOTSTOP,     // walls and factories
             END_NOT_A_STATUS            // end of enum, not a valid status
@@ -61,9 +65,6 @@ class Actor : public GraphObject
         bool m_isDead;
         int m_occupancyStatus;
         int m_XPVal;
-
-        
-        //direction, image ID, visibility provided in graph object
 };
 
 inline int Actor::GetOcStatus() const
@@ -89,6 +90,16 @@ inline bool Actor::isDead() const
 inline void Actor::Die()
 {
     m_isDead = true;
+}
+
+inline bool Actor::Pushable() const
+{
+    return false;
+}
+
+inline bool Actor::Push(int dir)
+{
+    return false;
 }
 
 
@@ -119,6 +130,27 @@ inline int KillableActor::GetHealth() const
 }
 
 
+class Marble : public KillableActor
+{
+public:
+    Marble(StudentWorld* sp, double startX, double startY);
+    virtual int doSomethingSpecific();
+    virtual bool Pushable() const;
+    virtual bool Push(int dir);
+private:
+    void MarbleMove(int dir);
+};
+
+inline bool Marble::Pushable() const
+{
+    return true;
+}
+
+inline int Marble::doSomethingSpecific()
+{
+    return GWSTATUS_CONTINUE_GAME;
+}
+
 
 class SentientActor : public KillableActor  // player and Robots... specific shared behaviors
 {
@@ -127,6 +159,7 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
     
         void Attack();          
         bool Move();
+        virtual bool WalkCondition();
 
         virtual void SpecificGetAttacked();
     
@@ -140,7 +173,6 @@ class Player : public SentientActor     // Handle Player Death
 {
 public:
     Player(StudentWorld* sp, double startX, double startY);
-    
     virtual int doSomethingSpecific();
     virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
@@ -149,6 +181,8 @@ public:
     void DecPeas();
     int GetCurrentAmmo() const;
     void PlayerFire();
+    
+    virtual bool WalkCondition();
     
 private:
     int m_nPeas;
@@ -208,6 +242,7 @@ public:
     Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
     virtual void GiveSpecificBenefit() = 0;
     virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
 };
 
 class AmmoGoodie : public Goodie

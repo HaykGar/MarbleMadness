@@ -52,13 +52,60 @@ KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double s
 bool KillableActor::getAttacked()
 {
     m_health -= PEA_DAMAGE;
-    SpecificGetAttacked();
     
     if(m_health <= 0)
         HandleDeath();
     
+    SpecificGetAttacked();
+    
     return true;
 }
+
+
+// Marble Implementations
+
+Marble::Marble(StudentWorld* sp, double startX, double startY) : KillableActor(MARBLE_HP, sp, IID_MARBLE, startX, startY, OC_KILLABLE_SHOTSTOP, none, 0)
+{}
+
+void Marble::MarbleMove(int dir)    // find nicer way?
+{
+    if(dir != left && dir != right && dir != up && dir != down){
+        std::cerr << "invalid direction for marble movement\n";
+        return;
+    }
+    setDirection(dir);
+    MoveOne();
+    setDirection(none);
+}
+
+bool Marble::Push(int dir)
+{
+    double x = getX();
+    double y = getY();
+    
+    switch(dir)
+    {
+        case left:
+            x--;
+            break;
+        case right:
+            x++;
+            break;
+        case up:
+            y++;
+            break;
+        case down:
+            y--;
+            break;
+    }
+    if(!GetWorld()->SquarePushable(x, y))
+        return false;
+    else{
+        MarbleMove(dir);
+        return true;
+    }
+}
+
 
 // SentientActor Implementations:
 
@@ -70,9 +117,14 @@ void SentientActor::SpecificGetAttacked()
     std::cerr << "will implement soon ... \n";
 }
 
+bool SentientActor::WalkCondition()
+{
+    return GetWorld()->CanWalk(this);
+}
+
 bool SentientActor::Move()
 {
-    if( GetWorld()->CanWalk(this) )
+    if( WalkCondition() )
     {
         MoveOne();
         return true;
@@ -100,6 +152,12 @@ void Player::PlayerFire()
     }
     else
         std::cerr << "out of ammo!\n";
+}
+
+// walk condition !!!!
+bool Player::WalkCondition()
+{
+    return SentientActor::WalkCondition() || GetWorld()->TryToPush();
 }
 
 int Player::doSomethingSpecific()      // fix me!
@@ -193,7 +251,7 @@ int Exit::doSomethingSpecific()
         setVisible(true);
     if( isVisible() && GetWorld()->SamePosAsPlayer(this) )
     {
-        GetWorld()->playSound(SOUND_FINISHED_LEVEL);
+        GetWorld()->playSound(SOUND_FINISHED_LEVEL);    // make dead sound
         HandleDeath();
         return GWSTATUS_FINISHED_LEVEL;
     }
@@ -211,12 +269,15 @@ int Goodie::doSomethingSpecific()
     if(GetWorld()->SamePosAsPlayer(this))
     {
         HandleDeath();  // die and give XP points to player
-        GetWorld()->playSound(SOUND_GOT_GOODIE);
         GiveSpecificBenefit();
     }
     return GWSTATUS_CONTINUE_GAME;
 }
 
+void Goodie::PlayDeadSound() const
+{
+    GetWorld()->playSound(SOUND_GOT_GOODIE);
+}
 
 // Ammo Goodie Implementations
 
@@ -253,7 +314,9 @@ Pit::Pit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_PIT, st
 
 int Pit::doSomethingSpecific()
 {
-    //marble related...
+    if(GetWorld()->MarbleWithPit(this)){
+        HandleDeath();
+    }
     
     return GWSTATUS_CONTINUE_GAME;
 }
