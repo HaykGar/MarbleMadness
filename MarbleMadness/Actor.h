@@ -9,6 +9,7 @@
 const int START_PLAYER_HEALTH = 20;
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
+const int LEVEL_FINISH_XP = 2000;
 
 
 
@@ -23,8 +24,8 @@ class Actor : public GraphObject
     public:
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
         
-        virtual void doSomething();   // needs more functionality
-        virtual void doSomethingSpecific() = 0;
+        int doSomething();   // needs more functionality
+        virtual int doSomethingSpecific() = 0;
         virtual bool getAttacked();     // make void?
         void MoveOne();
             
@@ -105,6 +106,7 @@ inline void KillableActor::SetHealth(int health)
 {
     m_health = health;
 }
+
 inline int KillableActor::GetHealth() const
 {
     return m_health;
@@ -133,11 +135,12 @@ class Player : public SentientActor     // Handle Player Death
 public:
     Player(StudentWorld* sp, double startX, double startY);
     
-    virtual void doSomethingSpecific();
+    virtual int doSomethingSpecific();
     virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
     virtual void PlayFireSound() const;
     void DecPeas();     // unnecessary?
+    int GetCurrentAmmo() const;
     void PlayerFire();
     
 private:
@@ -149,16 +152,11 @@ inline void Player::DecPeas()
     m_nPeas--;
 }
 
-// class unkillable actor?
+inline int Player::GetCurrentAmmo() const
+{
+    return m_nPeas;
+}
 
-
-//class ShotStopActor : public Actor  // Walls and Factories
-//{
-//public:
-//    ShotStopActor(StudentWorld* sp, int imageID, double startX, double startY, int dir = right, double size = 1.0);
-//    
-//    
-//};
 
 
 class Wall : public Actor   // public shotStopper ???
@@ -166,8 +164,13 @@ class Wall : public Actor   // public shotStopper ???
 public:
     Wall(StudentWorld* sp, double startX, double startY);
     
-    virtual void doSomethingSpecific() {}
+    virtual int doSomethingSpecific();
 };
+
+inline int Wall::doSomethingSpecific()
+{
+    return GWSTATUS_CONTINUE_GAME;
+}
 
 
 class Pea : public Actor    // change parent class later
@@ -175,7 +178,25 @@ class Pea : public Actor    // change parent class later
 public:
     Pea(StudentWorld* sp, double startX, double startY, int dir);
     
-    virtual void doSomethingSpecific();
+    virtual int doSomethingSpecific();
 };
+
+
+class Exit : public Actor
+{
+    public:
+    
+    Exit(StudentWorld* sp, double startX, double startY);
+    
+    virtual int doSomethingSpecific();
+};
+
+class Goodie : public Actor
+{
+public:
+    Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
+};
+
+
 
 #endif // ACTOR_H_

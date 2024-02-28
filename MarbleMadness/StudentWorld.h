@@ -6,10 +6,15 @@
 #include "GameConstants.h"
 #include "Actor.h"
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include <vector>
 #include <list>
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
+
+const int LEVEL_START_BONUS = 1000;
+
 
 class StudentWorld : public GameWorld
 {
@@ -20,16 +25,20 @@ public:
     virtual int move();
     virtual void cleanUp();
     
+    void UpdateGameText();
+    
     void AddActor(Actor* a);
     
     void RemoveDead();
     bool AttackSquare(double x, double y);
     void FireFrom(Actor* a);
-
-    const int LEVEL_START_BONUS = 1000;
+    void DecCrystals();
+    bool CrystalsLeft();
     
+    bool SamePosAsPlayer(Actor* a);
     bool CanWalk(Actor* a);
     void ConvertCoords(double x, double y, int& row, int& col);
+    void GetLevelFileName(std::string& s);
     
     // GameMap wrappers essentially
     bool SquareWalkable(double x, double y);
@@ -39,9 +48,11 @@ public:
 
 private:
     std::vector<Actor*> m_Actors;
-    Player* m_player;      //change to Player*
-    // need to update move methods accordingly
-    struct GameMap      // CAREFUL to convert row col to x y appropriately, HANDLE MOVE UPDATING GRID
+    Player* m_player;
+    int m_nCrystals;
+    unsigned int m_Bonus;
+
+    struct GameMap
     {
         GameMap();
         ~GameMap();
@@ -62,5 +73,20 @@ private:
     };
     GameMap m_grid;
 };
+
+inline void StudentWorld::DecCrystals()
+{
+    m_nCrystals--;
+}
+
+inline bool StudentWorld::CrystalsLeft()
+{
+    return m_nCrystals > 0;
+}
+
+inline bool StudentWorld::SamePosAsPlayer(Actor *a)
+{
+    return (AreEqual(a->getX(), m_player->getX()) && AreEqual(a->getY(), m_player->getY()));
+}
 
 #endif // STUDENTWORLD_H_

@@ -13,7 +13,7 @@ GameWorld* createStudentWorld(string assetPath)
 // Students:  Add code to this file, StudentWorld.h, Actor.h, and Actor.cpp
 
 StudentWorld::StudentWorld(string assetPath)
-: GameWorld(assetPath), m_player(nullptr)
+: GameWorld(assetPath), m_player(nullptr), m_nCrystals(0), m_Bonus(0), m_grid()
 {}
 
 StudentWorld::~StudentWorld()
@@ -21,15 +21,37 @@ StudentWorld::~StudentWorld()
     cleanUp();
 }
 
+void StudentWorld::GetLevelFileName(std::string& s)
+{
+    std::ostringstream currentLevel;
+
+    currentLevel << "level" << setw(2);
+    currentLevel.fill('0');
+    currentLevel << getLevel() << ".txt";
+    s = currentLevel.str();
+}
 
 int StudentWorld::init()
 {
+    if(getLevel() == 99)
+        return GWSTATUS_PLAYER_WON;
+    
+    m_Bonus = LEVEL_START_BONUS;
     Level lev(assetPath());
-    Level::LoadResult result = lev.loadLevel("level00.txt");
-    if (result == Level::load_fail_file_not_found)
-            cerr << "Could not find level00.txt data file\n";
+    string currentLevel;
+    GetLevelFileName(currentLevel);
+    
+    Level::LoadResult result = lev.loadLevel(currentLevel);
+    if(result == Level::load_fail_file_not_found)
+    {
+        cerr << "Could not find " << currentLevel << " data file\n";    // no level files left, won game
+        return GWSTATUS_PLAYER_WON;
+    }
     else if (result == Level::load_fail_bad_format)
+    {
         cerr << "Your level was improperly formatted\n";
+        return GWSTATUS_LEVEL_ERROR;
+    }
     else if (result == Level::load_success)
     {
         cerr << "Successfully loaded level\n";
@@ -37,6 +59,7 @@ int StudentWorld::init()
         {
             for(int y = 0; y < VIEW_HEIGHT; y++)
             {
+                Actor* newActor = nullptr;
                 Level::MazeEntry ge = lev.getContentsOf(x,y);
                 switch (ge)
                 {
@@ -44,19 +67,23 @@ int StudentWorld::init()
                         break;
                     case Level::wall:
                     {
-                        Wall* wall = new Wall(this, x, y);
-                        AddActor(wall);
+                        newActor = new Wall(this, x, y);
+                        AddActor(newActor);
                         break;
                     }
+                    case Level::exit:
+                        newActor = new Exit(this, x, y);
+                        AddActor(newActor);
+                        break;
+                    case Level::crystal:
+                        std::cerr << "crystal here\n";
+                        //m_nCrystals++;
+                        //make new crystal and add to vector
+                        break;
                     case Level::player:
                         m_player = new Player(this, x, y);
                         OccupySquare(m_player);
                         break;
-                    case Level::exit:
-                        // make exit
-                        std::cerr << "exit exists\n";
-                        break;
-
                     default:
                         std::cout << "ankap gyada\n";
                 }
@@ -71,14 +98,19 @@ int StudentWorld::init()
 int StudentWorld::move()
 {
     // This code is here merely to allow the game to build, run, and terminate after you type q
-    int bonus = LEVEL_START_BONUS;
-
-    setGameStatText("Game will end when you type q");
-
+        
     size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
     m_player->doSomething();
     for(size_t i = 0; i < size && !m_player->isDead(); i++) // leave loop if player dies
-        m_Actors[i]->doSomething();
+    {
+        int actionResult = m_Actors[i]->doSomething();
+        if( actionResult == GWSTATUS_FINISHED_LEVEL)
+        {
+            increaseScore(m_Bonus);
+            return GWSTATUS_FINISHED_LEVEL;    // exit returns level won status
+        }
+    }
+            
     
     if(m_player->isDead())
     {
@@ -88,9 +120,10 @@ int StudentWorld::move()
     }
     RemoveDead();
     
-    if(bonus > 0)
-        bonus --;
+    if(m_Bonus > 0)
+        m_Bonus--;
     
+    UpdateGameText();
 	return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -120,8 +153,8 @@ void StudentWorld::cleanUp()
         last--;
     }
     delete m_player;
-    m_player = nullptr;     // some weird double deletion happening ?
-    
+    m_player = nullptr;
+    m_nCrystals = 0;
     m_grid.CleanUpMap();
 }
 
@@ -129,6 +162,27 @@ void StudentWorld::AddActor(Actor* a)
 {
     m_Actors.push_back(a);
     OccupySquare(a);
+}
+
+void StudentWorld::UpdateGameText() // inefficient, fix later
+{
+    if(m_player == nullptr)
+        return;
+    
+    std::ostringstream text;
+    text << "Score: " << setw(7);
+    text.fill('0');
+    text << getScore() << "  " << "Level: " << setw(2) << getLevel() << "  ";
+    text.fill(' ');
+    text << "Lives: " << setw(2) << getLives() << "  ";
+    
+    double hpPercent = ((double) m_player->GetHealth() / START_PLAYER_HEALTH) * 100;
+    text << setw(3) << "Health: " << hpPercent << '%' << "  ";
+    text << "Ammo: " << setw(3) << m_player->GetCurrentAmmo() << "  ";
+    text << "Bonus: " << setw(4) << m_Bonus << "  ";
+    
+    std::cerr << text.str() << "END\n";
+    setGameStatText(text.str());
 }
 
 void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)

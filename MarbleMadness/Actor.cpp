@@ -19,12 +19,12 @@ bool Actor::getAttacked()   // virtual
     return false;
 }
 
-void Actor::doSomething()
+int Actor::doSomething()
 {
     if(isDead())
-        return;
+        return GWSTATUS_CONTINUE_GAME;
     
-    doSomethingSpecific();
+    return doSomethingSpecific();
 }
 
 
@@ -39,10 +39,9 @@ void Actor::HandleDeath()
 
 void Actor::MoveOne()
 {
-    StudentWorld* world = GetWorld();
-    world->LeaveSquare(this);
+    GetWorld()->LeaveSquare(this);
     moveForward();
-    world->OccupySquare(this);
+    GetWorld()->OccupySquare(this);
 }
 
 // KillableActor Implementations:
@@ -102,7 +101,7 @@ void Player::PlayerFire()
         std::cerr << "out of ammo!\n";
 }
 
-void Player::doSomethingSpecific()      // fix me!
+int Player::doSomethingSpecific()      // fix me!
 {
     int ch;
     if(GetWorld()->getKey(ch))
@@ -130,11 +129,12 @@ void Player::doSomethingSpecific()      // fix me!
                 break;
             case KEY_PRESS_ESCAPE:
                 Die();
-                return;
+                return GWSTATUS_PLAYER_DIED;
             default:
                 break;
         }
     }
+    return GWSTATUS_CONTINUE_GAME;
 }
 
 // Do NOT inline the sound functions
@@ -165,14 +165,43 @@ Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL,
 Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, OC_NON_BARRIER, dir, 0)
 {}
 
-void Pea::doSomethingSpecific()
+int Pea::doSomethingSpecific()
 {
     if(GetWorld()->AttackSquare(getX(), getY()))
     {
         HandleDeath();
-        return;
+        return GWSTATUS_CONTINUE_GAME;
     }
     MoveOne();
     if(GetWorld()->AttackSquare(getX(), getY()) )
         HandleDeath();
+    
+    return GWSTATUS_CONTINUE_GAME;
 }
+
+// Exit Implementations
+
+Exit::Exit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_EXIT, startX, startY, OC_NON_BARRIER, none, LEVEL_FINISH_XP)
+{
+    setVisible(false);
+}
+
+int Exit::doSomethingSpecific()
+{
+    if(!GetWorld()->CrystalsLeft()) // no crystals left
+        setVisible(true);
+    if( isVisible() && GetWorld()->SamePosAsPlayer(this) )
+    {
+        HandleDeath();
+        return GWSTATUS_FINISHED_LEVEL;
+    }
+        
+    
+    return GWSTATUS_CONTINUE_GAME;
+}
+
+// Goodie Implementations
+Goodie::Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp) : Actor(sp, imageID, startX, startY, OC_NON_BARRIER, none, xp)
+{}
+
+
