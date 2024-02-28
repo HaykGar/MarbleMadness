@@ -11,10 +11,10 @@ bool AreEqual(double d1, double d2)
 
 // Actor Implementations:
 
-Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat)
+Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat), m_XPVal(xp)
 {}
 
-bool Actor::getAttacked()
+bool Actor::getAttacked()   // virtual
 {
     return false;
 }
@@ -27,30 +27,7 @@ void Actor::doSomething()
     doSomethingSpecific();
 }
 
-int Actor::GetOcStatus() const
-{
-    return m_occupancyStatus;
-}
 
-int Actor::GetXPValue() const
-{
-    return m_XPVal;
-}
-
-StudentWorld* Actor::GetWorld() const
-{ 
-    return m_world;
-}
-
-bool Actor::isDead() const
-{
-    return m_isDead;
-}
-
-void Actor::Die()
-{
-    m_isDead = true;
-}
 
 void Actor::HandleDeath()
 {
@@ -63,14 +40,14 @@ void Actor::HandleDeath()
 void Actor::MoveOne()
 {
     StudentWorld* world = GetWorld();
-    world->LeaveSquare(getX(), getY(), GetOcStatus());
+    world->LeaveSquare(this);
     moveForward();
-    world->OccupySquare(getX(), getY(), GetOcStatus());
+    world->OccupySquare(this);
 }
 
 // KillableActor Implementations:
 
-KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : Actor(sp, imageID, startX, startY, ocStat, dir), m_health(health) {}
+KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : Actor(sp, imageID, startX, startY, ocStat, dir, xp), m_health(health) {}
 
 bool KillableActor::getAttacked()
 {
@@ -85,7 +62,7 @@ bool KillableActor::getAttacked()
 
 // SentientActor Implementations:
 
-SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir) : KillableActor(health, sp, imageID, startX, startY, ocStat, dir) {}
+SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : KillableActor(health, sp, imageID, startX, startY, ocStat, dir, xp) {}
 
 void SentientActor::SpecificGetAttacked()
 {
@@ -95,7 +72,7 @@ void SentientActor::SpecificGetAttacked()
 
 bool SentientActor::Move()
 {
-    if(GetWorld()->CanWalk(getX(), getY(), getDirection()))
+    if( GetWorld()->CanWalk(this) )
     {
         MoveOne();
         return true;
@@ -105,14 +82,25 @@ bool SentientActor::Move()
 
 void SentientActor::Attack()
 {
-    GetWorld()->FireFrom(getX(), getY(), getDirection());
+    GetWorld()->FireFrom(this);
     PlayFireSound();
 }
 
 // Player Implementations:
 
-Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, OC_KILLABLE_SHOTSTOP, right), m_nPeas(PLAYER_START_PEAS) {}
+Player::Player(StudentWorld* sp, double startX, double startY) : SentientActor(START_PLAYER_HEALTH, sp, IID_PLAYER, startX, startY, OC_KILLABLE_SHOTSTOP, right, 0), m_nPeas(PLAYER_START_PEAS) {}
 
+
+void Player::PlayerFire()
+{
+    if(m_nPeas > 0)
+    {
+        Attack();
+        DecPeas();
+    }
+    else
+        std::cerr << "out of ammo!\n";
+}
 
 void Player::doSomethingSpecific()      // fix me!
 {
@@ -138,7 +126,7 @@ void Player::doSomethingSpecific()      // fix me!
                 Move();
                 break;
             case KEY_PRESS_SPACE:
-                Attack();
+                PlayerFire();
                 break;
             case KEY_PRESS_ESCAPE:
                 Die();
@@ -149,6 +137,7 @@ void Player::doSomethingSpecific()      // fix me!
     }
 }
 
+// Do NOT inline the sound functions
 void Player::PlayAttackedSound() const
 {
     GetWorld()->playSound(SOUND_PLAYER_IMPACT);
@@ -165,13 +154,15 @@ void Player::PlayFireSound() const
 }
 
 
+
+
 // Wall Implementations:
 
-Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, OC_UNKILLABLE_SHOTSTOP, none) {}
+Wall::Wall(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_WALL, startX, startY, OC_UNKILLABLE_SHOTSTOP, none, 0) {}
 
 // Pea Implementations
 
-Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, OC_NON_BARRIER, dir)
+Pea::Pea(StudentWorld* sp, double startX, double startY, int dir) : Actor(sp, IID_PEA, startX, startY, OC_NON_BARRIER, dir, 0)
 {}
 
 void Pea::doSomethingSpecific()
@@ -184,9 +175,4 @@ void Pea::doSomethingSpecific()
     MoveOne();
     if(GetWorld()->AttackSquare(getX(), getY()) )
         HandleDeath();
-}
-
-bool Pea::isBarrier()
-{
-    return false;
 }
