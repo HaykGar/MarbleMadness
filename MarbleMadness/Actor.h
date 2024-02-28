@@ -231,6 +231,12 @@ public:
     virtual void GiveSpecificBenefit();
 };
 
+class Pit : public Actor
+{
+public:
+    Pit(StudentWorld* sp, double startX, double startY);
+    virtual int doSomethingSpecific();
+};
 
 
 #endif // ACTOR_H_

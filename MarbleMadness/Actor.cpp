@@ -31,6 +31,7 @@ int Actor::doSomething()
 
 void Actor::HandleDeath()
 {
+    GetWorld()->LeaveSquare(this);
     Die();
     PlayDeadSound();
     GetWorld()->increaseScore(GetXPValue());
@@ -244,4 +245,15 @@ Crystal::Crystal (StudentWorld* sp, double startX, double startY) : Goodie(sp, I
 void Crystal::GiveSpecificBenefit()
 {
     GetWorld()->DecCrystals();  // let world know there are one fewer crystals
+}
+
+// Pit Implementations
+Pit::Pit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_PIT, startX, startY, OC_BARRIER_NON_SHOTSTOP, none, 0)
+{}
+
+int Pit::doSomethingSpecific()
+{
+    //marble related...
+    
+    return GWSTATUS_CONTINUE_GAME;
 }

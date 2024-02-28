@@ -88,6 +88,10 @@ int StudentWorld::init()
                         newActor = new ExtraLifeGoodie(this, x, y);
                         AddActor(newActor);
                         break;
+                    case Level::pit:
+                        newActor = new Pit(this, x, y);
+                        AddActor(newActor);
+                        break;
                     case Level::player:
                         m_player = new Player(this, x, y);
                         OccupySquare(m_player);
