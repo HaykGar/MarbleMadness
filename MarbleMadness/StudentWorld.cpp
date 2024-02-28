@@ -45,13 +45,12 @@ int StudentWorld::init()
                     case Level::wall:
                     {
                         Wall* wall = new Wall(this, x, y);
-                        m_Actors.push_back(wall);
-                        OccupySquare(wall->getX(), wall->getY(), wall->GetOcStatus());
+                        AddActor(wall);
                         break;
                     }
                     case Level::player:
                         m_player = new Player(this, x, y);
-                        OccupySquare(m_player->getX(), m_player->getY(), m_player->GetOcStatus());
+                        OccupySquare(m_player);
                         break;
                     case Level::exit:
                         // make exit
@@ -72,14 +71,14 @@ int StudentWorld::init()
 int StudentWorld::move()
 {
     // This code is here merely to allow the game to build, run, and terminate after you type q
+    int bonus = LEVEL_START_BONUS;
 
     setGameStatText("Game will end when you type q");
 
-    size_t size = m_Actors.size();  // don't give new peas a chance to move their first tick
+    size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
     m_player->doSomething();
-    for(size_t i = 0; i < size && !m_player->isDead(); i++){
+    for(size_t i = 0; i < size && !m_player->isDead(); i++) // leave loop if player dies
         m_Actors[i]->doSomething();
-    }
     
     if(m_player->isDead())
     {
@@ -88,6 +87,9 @@ int StudentWorld::move()
         return GWSTATUS_PLAYER_DIED;
     }
     RemoveDead();
+    
+    if(bonus > 0)
+        bonus --;
     
 	return GWSTATUS_CONTINUE_GAME;
 }
@@ -123,6 +125,11 @@ void StudentWorld::cleanUp()
     m_grid.CleanUpMap();
 }
 
+void StudentWorld::AddActor(Actor* a)
+{
+    m_Actors.push_back(a);
+    OccupySquare(a);
+}
 
 void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)
 {
@@ -130,8 +137,12 @@ void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)
     row = VIEW_HEIGHT-1-std::round(y);
 }
 
-bool StudentWorld::CanWalk(double x, double y, int dir)
+bool StudentWorld::CanWalk(Actor* a)
 {
+    double x = a->getX();
+    double y = a->getY();
+    int dir = a->getDirection();
+    
     switch(dir)
     {
         case Actor::up:
@@ -156,7 +167,7 @@ bool StudentWorld::AttackSquare(double x, double y)
     
     for(int i = 0; i < m_Actors.size(); i++)
     {
-        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > Actor::OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < Actor::END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
         {
             m_Actors[i]->getAttacked();
             return true;
@@ -166,8 +177,12 @@ bool StudentWorld::AttackSquare(double x, double y)
     return false;
 }
 
-void StudentWorld::FireFrom(double x, double y, int dir)
+void StudentWorld::FireFrom(Actor* a)
 {
+    double x = a->getX();
+    double y = a->getY();
+    int dir = a->getDirection();
+    
     Pea* pea = nullptr;
     switch(dir)
     {
@@ -188,22 +203,29 @@ void StudentWorld::FireFrom(double x, double y, int dir)
             return;
     }
     
-    m_Actors.push_back(pea);
-    OccupySquare(pea->getX(), pea->getY(), pea->GetOcStatus());
+    AddActor(pea);
 }
 
 // GameMap wrappers
 
-void StudentWorld::LeaveSquare(double x, double y, int status)
+void StudentWorld::LeaveSquare(Actor* a)
 {
     int row, col;
+    double x = a->getX();
+    double y = a->getY();
+    int status = a->GetOcStatus();
+    
     ConvertCoords(x, y, row, col);
     m_grid.LeaveSquare(col, row, status);
 }
 
-void StudentWorld::OccupySquare(double x, double y, int status)
+void StudentWorld::OccupySquare(Actor* a)
 {
     int row, col;
+    double x = a->getX();
+    double y = a->getY();
+    int status = a->GetOcStatus();
+    
     ConvertCoords(x, y, row, col);
     m_grid.OccupySquare(col, row, status);
 }
@@ -257,7 +279,7 @@ bool StudentWorld::GameMap::InvalidCoords(int col, int row)
 
 bool StudentWorld::GameMap::InvalidStatus(int status)
 {
-    if (status <= OC_ERROR || status >= END_NOT_A_STATUS)
+    if (status <= Actor::OC_ERROR || status >= Actor::END_NOT_A_STATUS)
     {
         std::cerr << "invalid status\n";
         return true;
@@ -313,7 +335,7 @@ bool StudentWorld::GameMap::SquareWalkable(int col, int row)
     std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
     for(; i != m_occupancyMap[row][col]->end(); i++)
     {
-        if(*i != OC_NON_BARRIER)
+        if(*i != Actor::OC_NON_BARRIER)
             return false;
     }
     return true;    // loop didn't execute or only goodies
@@ -330,7 +352,7 @@ bool StudentWorld::GameMap::SquareAttackable(int col, int row)
     list<int>::iterator i = m_occupancyMap[row][col]->begin();
     for(; i != m_occupancyMap[row][col]->end(); i++)
     {
-        if (*i == OC_KILLABLE_SHOTSTOP || *i == OC_UNKILLABLE_SHOTSTOP)
+        if (*i == Actor::OC_KILLABLE_SHOTSTOP || *i == Actor::OC_UNKILLABLE_SHOTSTOP)
             return true;
     }
     return false;

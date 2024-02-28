@@ -20,20 +20,23 @@ public:
     virtual int move();
     virtual void cleanUp();
     
+    void AddActor(Actor* a);
+    
     void RemoveDead();
     bool AttackSquare(double x, double y);
-    void FireFrom(double x, double y, int dir);
+    void FireFrom(Actor* a);
 
+    const int LEVEL_START_BONUS = 1000;
     
-    bool CanWalk(double x, double y, int dir);
+    bool CanWalk(Actor* a);
     void ConvertCoords(double x, double y, int& row, int& col);
     
     // GameMap wrappers essentially
     bool SquareWalkable(double x, double y);
-    void LeaveSquare(double x, double y, int status);
-    void OccupySquare(double x, double y, int status);
+    void LeaveSquare(Actor* a);
+    void OccupySquare(Actor* a);
     bool SquareAttackable(double x, double y);
-        
+
 private:
     std::vector<Actor*> m_Actors;
     Player* m_player;      //change to Player*
