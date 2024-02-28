@@ -30,12 +30,17 @@ public:
     void AddActor(Actor* a);
     
     void RemoveDead();
+    
     bool AttackSquare(double x, double y);
     void FireFrom(Actor* a);
+    
     void DecCrystals();
     bool CrystalsLeft();
-    
     bool SamePosAsPlayer(Actor* a);
+    void GivePlayerPeas(unsigned int amount);
+    void RestorePlayerHealth();
+    
+    
     bool CanWalk(Actor* a);
     void ConvertCoords(double x, double y, int& row, int& col);
     void GetLevelFileName(std::string& s);
@@ -87,6 +92,16 @@ inline bool StudentWorld::CrystalsLeft()
 inline bool StudentWorld::SamePosAsPlayer(Actor *a)
 {
     return (AreEqual(a->getX(), m_player->getX()) && AreEqual(a->getY(), m_player->getY()));
+}
+
+inline void StudentWorld::GivePlayerPeas(unsigned int amount)
+{
+    m_player->AddPeas(amount);
+}
+
+inline void StudentWorld::RestorePlayerHealth()
+{
+    m_player->SetHealth(START_PLAYER_HEALTH);
 }
 
 #endif // STUDENTWORLD_H_

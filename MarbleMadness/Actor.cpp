@@ -192,6 +192,7 @@ int Exit::doSomethingSpecific()
         setVisible(true);
     if( isVisible() && GetWorld()->SamePosAsPlayer(this) )
     {
+        GetWorld()->playSound(SOUND_FINISHED_LEVEL);
         HandleDeath();
         return GWSTATUS_FINISHED_LEVEL;
     }
@@ -204,4 +205,43 @@ int Exit::doSomethingSpecific()
 Goodie::Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp) : Actor(sp, imageID, startX, startY, OC_NON_BARRIER, none, xp)
 {}
 
+int Goodie::doSomethingSpecific()
+{
+    if(GetWorld()->SamePosAsPlayer(this))
+    {
+        HandleDeath();  // die and give XP points to player
+        GetWorld()->playSound(SOUND_GOT_GOODIE);
+        GiveSpecificBenefit();
+    }
+    return GWSTATUS_CONTINUE_GAME;
+}
 
+
+// Ammo Goodie Implementations
+
+AmmoGoodie::AmmoGoodie(StudentWorld* sp, double startX, double startY) : Goodie(sp, IID_AMMO, startX, startY, AMMO_XP)
+{}
+
+void AmmoGoodie::GiveSpecificBenefit()
+{
+    GetWorld()->GivePlayerPeas(AMMO_EXTRA_PEAS);
+}
+
+// Extra Life Goodie Implementations
+ExtraLifeGoodie::ExtraLifeGoodie(StudentWorld* sp, double startX, double startY) : Goodie(sp, IID_EXTRA_LIFE, startX, startY, EXTRA_LIFE_XP)
+{}
+
+void ExtraLifeGoodie::GiveSpecificBenefit()
+{
+    GetWorld()->incLives();
+}
+
+// Crystal Implementations
+
+Crystal::Crystal (StudentWorld* sp, double startX, double startY) : Goodie(sp, IID_CRYSTAL, startX, startY, CRYSTAL_XP)
+{}
+
+void Crystal::GiveSpecificBenefit()
+{
+    GetWorld()->DecCrystals();  // let world know there are one fewer crystals
+}

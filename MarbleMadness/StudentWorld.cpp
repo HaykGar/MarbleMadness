@@ -76,9 +76,17 @@ int StudentWorld::init()
                         AddActor(newActor);
                         break;
                     case Level::crystal:
-                        std::cerr << "crystal here\n";
-                        //m_nCrystals++;
-                        //make new crystal and add to vector
+                        m_nCrystals++;
+                        newActor = new Crystal(this, x, y);
+                        AddActor(newActor);
+                        break;
+                    case Level::ammo:
+                        newActor = new AmmoGoodie(this, x, y);
+                        AddActor(newActor);
+                        break;
+                    case Level::extra_life:
+                        newActor = new ExtraLifeGoodie(this, x, y);
+                        AddActor(newActor);
                         break;
                     case Level::player:
                         m_player = new Player(this, x, y);
@@ -97,8 +105,8 @@ int StudentWorld::init()
 
 int StudentWorld::move()
 {
-    // This code is here merely to allow the game to build, run, and terminate after you type q
-        
+    UpdateGameText();
+
     size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
     m_player->doSomething();
     for(size_t i = 0; i < size && !m_player->isDead(); i++) // leave loop if player dies
@@ -123,7 +131,6 @@ int StudentWorld::move()
     if(m_Bonus > 0)
         m_Bonus--;
     
-    UpdateGameText();
 	return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -166,9 +173,8 @@ void StudentWorld::AddActor(Actor* a)
 
 void StudentWorld::UpdateGameText() // inefficient, fix later
 {
-    if(m_player == nullptr)
-        return;
-    
+//    if(m_player == nullptr)
+//        return;
     std::ostringstream text;
     text << "Score: " << setw(7);
     text.fill('0');
@@ -181,7 +187,6 @@ void StudentWorld::UpdateGameText() // inefficient, fix later
     text << "Ammo: " << setw(3) << m_player->GetCurrentAmmo() << "  ";
     text << "Bonus: " << setw(4) << m_Bonus << "  ";
     
-    std::cerr << text.str() << "END\n";
     setGameStatText(text.str());
 }
 

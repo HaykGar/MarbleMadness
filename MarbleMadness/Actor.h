@@ -7,9 +7,15 @@
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
 const int START_PLAYER_HEALTH = 20;
+
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
+const int AMMO_EXTRA_PEAS = 20;
+
 const int LEVEL_FINISH_XP = 2000;
+const int AMMO_XP = 100;
+const int EXTRA_LIFE_XP = 1000;
+const int CRYSTAL_XP = 50;
 
 
 
@@ -139,7 +145,8 @@ public:
     virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
     virtual void PlayFireSound() const;
-    void DecPeas();     // unnecessary?
+    void AddPeas(unsigned int amount);
+    void DecPeas();
     int GetCurrentAmmo() const;
     void PlayerFire();
     
@@ -157,6 +164,10 @@ inline int Player::GetCurrentAmmo() const
     return m_nPeas;
 }
 
+inline void Player::AddPeas(unsigned int amount)
+{
+    m_nPeas += amount;
+}
 
 
 class Wall : public Actor   // public shotStopper ???
@@ -195,6 +206,29 @@ class Goodie : public Actor
 {
 public:
     Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
+    virtual void GiveSpecificBenefit() = 0;
+    virtual int doSomethingSpecific();
+};
+
+class AmmoGoodie : public Goodie
+{
+public:
+    AmmoGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+class ExtraLifeGoodie : public Goodie
+{
+public:
+    ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+class Crystal : public Goodie
+{
+public:
+    Crystal(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
 };
 
 
