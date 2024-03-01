@@ -226,6 +226,16 @@ int Robot::doSomethingSpecific()
     return GWSTATUS_CONTINUE_GAME;
 }
 
+bool Robot::ShootPlayer()
+{
+    if(GetWorld()->PlayerInLOS(this))
+    {
+        Attack();
+        return true;
+    }
+    return false;
+}
+
 void Robot::PlayAttackedSound() const
 {
     GetWorld()->playSound(SOUND_ROBOT_IMPACT);
@@ -261,19 +271,67 @@ RageBot::RageBot(StudentWorld* sp, double startX, double startY, int dir) : Robo
     }
 }
 
+
 void RageBot::SpecialRobotAction()
 {
-    if(GetWorld()->PlayerInLOS(this))
-    {
-        Attack();
+    if(ShootPlayer())
         return;
-    }
     if(!Move())
     {
         m_dirIndex = !m_dirIndex;
         ResetDirection();       // change dir to opposite direction
     }
 }
+
+// ThiefBot Implementations:
+
+ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp) : Robot(health, sp, imageID, startX, startY, right, xp), m_dTravelled(0)
+{
+    m_dToTurn = randInt(1, 6);
+    dirs[0] = left;
+    dirs[1] = right;
+    dirs[2] = up;
+    dirs[3] = down;
+}
+
+void ThiefBot::ShuffleDirs()
+{
+    for(int i = 0; i < 4; i++)
+    {
+        std::swap(dirs[i], dirs[randInt(i, 3)]);
+    }
+}
+
+void ThiefBot::SpecialRobotAction()
+{
+    if(GetWorld()->GoodieHere(getX(), getY()))
+    {
+        // try to get goodie
+        std::cerr << "trying to steal\n";
+        return;
+    }
+    if( !(m_dTravelled < m_dToTurn && Move()) ) // failed to move
+    {
+        m_dToTurn = randInt(1, 6);
+        m_dTravelled = 0;
+        
+        int prevDir = getDirection();
+        ShuffleDirs();
+        for(int i = 0; i < 4; i++)
+        {
+            setDirection(dirs[i]);
+            if(Move())
+            {
+                m_dTravelled++;
+                return;
+            }
+        }
+        setDirection(prevDir);  // could not move in any direction
+    }
+    else
+        m_dTravelled++;
+}
+
 
 // Wall Implementations:
 

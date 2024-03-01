@@ -260,6 +260,12 @@ bool StudentWorld::CanWalk(Actor* a) const
     }
 }
 
+bool StudentWorld::GoodieHere(double x, double y) const
+{
+    return (SquareWalkable(x, y) && !SquarePushable(x, y));
+}
+
+
 bool StudentWorld::PlayerInLOS(Actor *a) const  // set max depth to guard against infinite recursion?
 {
     if(a == nullptr)

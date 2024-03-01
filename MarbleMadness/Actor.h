@@ -9,6 +9,7 @@
 const int START_PLAYER_HEALTH = 20;
 const int MARBLE_HP_START = 10;
 const int RAGEBOT_HP_START = 10;
+const int REG_THIEFBOT_HP_START = 5;
 
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
@@ -63,8 +64,6 @@ class Actor : public GraphObject
             END_NOT_A_STATUS            // end of enum, not a valid status
         };
         
-    
-
     private:
         StudentWorld* m_world;
         bool m_isDead;
@@ -228,6 +227,8 @@ public:
     virtual int doSomethingSpecific();
     virtual void SpecialRobotAction() = 0;
     
+    bool ShootPlayer();
+    
     virtual void PlayDeadSound() const;
     virtual void PlayAttackedSound() const;
     virtual void PlayFireSound() const;
@@ -261,6 +262,50 @@ inline void RageBot::ResetDirection()
 {
     setDirection(m_dirs[m_dirIndex]);
 }
+
+// ThiefBot
+
+class ThiefBot : public Robot
+{
+public:
+    ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp);
+    
+    int GetTravelled() const;
+    int GetToTurn() const;
+    
+    void SetTravelled(int amt);
+    void SetToTurn(int amt);
+    
+    virtual void SpecialRobotAction();
+
+private:
+    int m_dTravelled;
+    int m_dToTurn;
+    int dirs[4];
+    
+    void ShuffleDirs();
+};
+
+inline int ThiefBot::GetTravelled() const
+{
+    return m_dTravelled;
+}
+inline int ThiefBot::GetToTurn() const
+{
+    return m_dToTurn;
+}
+inline void ThiefBot::SetTravelled(int amt)
+{
+    m_dTravelled = amt;
+}
+inline void ThiefBot::SetToTurn(int amt)
+{
+    m_dToTurn = amt;
+}
+
+
+
+
 
 // Wall
 
