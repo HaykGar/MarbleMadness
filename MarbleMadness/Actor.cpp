@@ -14,10 +14,6 @@ bool AreEqual(double d1, double d2)
 Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat), m_XPVal(xp)
 {}
 
-bool Actor::getAttacked()   // virtual
-{
-    return false;
-}
 
 int Actor::doSomething()
 {
@@ -49,16 +45,12 @@ void Actor::MoveOne()
 
 KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : Actor(sp, imageID, startX, startY, ocStat, dir, xp), m_health(health) {}
 
-bool KillableActor::getAttacked()
+void KillableActor::getAttacked()
 {
     m_health -= PEA_DAMAGE;
     
     if(m_health <= 0)
         HandleDeath();
-    
-    SpecificGetAttacked();
-    
-    return true;
 }
 
 
@@ -111,10 +103,10 @@ bool Marble::Push(int dir)
 
 SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : KillableActor(health, sp, imageID, startX, startY, ocStat, dir, xp) {}
 
-void SentientActor::SpecificGetAttacked()
+void SentientActor::getAttacked()
 {
-    // IMPLEMENT ME
-    std::cerr << "will implement soon ... \n";
+    KillableActor::getAttacked();
+    PlayAttackedSound();
 }
 
 bool SentientActor::WalkCondition()
@@ -154,13 +146,12 @@ void Player::PlayerFire()
         std::cerr << "out of ammo!\n";
 }
 
-// walk condition !!!!
 bool Player::WalkCondition()
 {
     return SentientActor::WalkCondition() || GetWorld()->TryToPush();
 }
 
-int Player::doSomethingSpecific()      // fix me!
+int Player::doSomethingSpecific()
 {
     int ch;
     if(GetWorld()->getKey(ch))
@@ -213,6 +204,42 @@ void Player::PlayFireSound() const
 }
 
 
+// Robot Implementations
+
+Robot::Robot(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir, int xp) : SentientActor(health, sp, imageID, startX, startY, OC_KILLABLE_SHOTSTOP, dir, xp), m_ticksWaited(0)
+{
+    m_ticksPerAction = ( 28 - GetWorld()->getLevel() ) / 4;
+    if(m_ticksPerAction < MIN_TICKS_PER_ACTION)
+        m_ticksPerAction = MIN_TICKS_PER_ACTION;
+}
+
+int Robot::doSomethingSpecific()
+{
+    if(NeedsToRest())
+    {
+        m_ticksWaited++;
+        return GWSTATUS_CONTINUE_GAME;
+    }
+    m_ticksWaited = 0;
+    SpecialRobotAction();
+    return GWSTATUS_CONTINUE_GAME;
+}
+
+void Robot::PlayAttackedSound() const
+{
+    GetWorld()->playSound(SOUND_ROBOT_IMPACT);
+}
+
+void Robot::PlayDeadSound() const
+{
+    GetWorld()->playSound(SOUND_ROBOT_DIE);
+}
+
+void Robot::PlayFireSound() const
+{
+    GetWorld()->playSound(SOUND_ENEMY_FIRE);
+}
+
 
 
 // Wall Implementations:
@@ -245,18 +272,20 @@ Exit::Exit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_EXIT,
     setVisible(false);
 }
 
+void Exit::PlayDeadSound() const
+{
+    GetWorld()->playSound(GWSTATUS_FINISHED_LEVEL);
+}
+
 int Exit::doSomethingSpecific()
 {
-    if(!GetWorld()->CrystalsLeft()) // no crystals left
+    if(!isVisible() && !GetWorld()->CrystalsLeft()) // no crystals left
         setVisible(true);
     if( isVisible() && GetWorld()->SamePosAsPlayer(this) )
     {
-        GetWorld()->playSound(SOUND_FINISHED_LEVEL);    // make dead sound
         HandleDeath();
         return GWSTATUS_FINISHED_LEVEL;
     }
-        
-    
     return GWSTATUS_CONTINUE_GAME;
 }
 

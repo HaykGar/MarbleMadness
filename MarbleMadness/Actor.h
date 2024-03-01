@@ -30,10 +30,11 @@ class Actor : public GraphObject
 {
     public:
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
+        virtual ~Actor() {}
         
         int doSomething();
         virtual int doSomethingSpecific() = 0;
-        virtual bool getAttacked();     // make void?
+        virtual void getAttacked() {}
         void MoveOne();
             
         int GetOcStatus() const;
@@ -107,9 +108,9 @@ class KillableActor : public Actor      // Actors that can be "killed" by peas, 
 {
     public:
     KillableActor(int health,StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
+    virtual ~KillableActor() {}
         
-    virtual void SpecificGetAttacked() {}
-    virtual bool getAttacked();
+    virtual void getAttacked();
         
     void SetHealth(int health);
     int GetHealth() const;
@@ -156,12 +157,13 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
 {
     public:
         SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
+        virtual ~SentientActor() {}
     
         void Attack();          
         bool Move();
         virtual bool WalkCondition();
 
-        virtual void SpecificGetAttacked();
+        virtual void getAttacked();
     
         virtual void PlayAttackedSound() const = 0;
         virtual void PlayFireSound() const = 0;
@@ -173,6 +175,7 @@ class Player : public SentientActor     // Handle Player Death
 {
 public:
     Player(StudentWorld* sp, double startX, double startY);
+    
     virtual int doSomethingSpecific();
     virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
@@ -234,12 +237,15 @@ class Exit : public Actor
     Exit(StudentWorld* sp, double startX, double startY);
     
     virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
 };
 
 class Goodie : public Actor
 {
 public:
     Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
+    virtual ~Goodie() {}
+    
     virtual void GiveSpecificBenefit() = 0;
     virtual int doSomethingSpecific();
     virtual void PlayDeadSound() const;
@@ -273,5 +279,30 @@ public:
     virtual int doSomethingSpecific();
 };
 
+class Robot : public SentientActor
+{
+public:
+    Robot(int health, StudentWorld* sp, int imageID, double startX, double startY, int dir, int xp);
+    
+    const int MIN_TICKS_PER_ACTION = 3;
+    
+    bool NeedsToRest() const;
+    virtual int doSomethingSpecific();
+    virtual void SpecialRobotAction() = 0;
+    
+    virtual void PlayDeadSound() const;
+    virtual void PlayAttackedSound() const;
+    virtual void PlayFireSound() const;
+    
+private:
+    unsigned int m_ticksWaited;
+    int m_ticksPerAction;
+};
+
+inline
+bool Robot::NeedsToRest() const
+{
+    return m_ticksWaited < m_ticksPerAction - 1;
+}
 
 #endif // ACTOR_H_
