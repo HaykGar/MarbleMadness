@@ -31,7 +31,6 @@ void Actor::HandleDeath()
     Die();
     PlayDeadSound();
     GetWorld()->increaseScore(GetXPValue());
-    SpecificDeathAction();
 }
 
 void Actor::MoveOne()
@@ -285,7 +284,7 @@ void RageBot::SpecialRobotAction()
 
 // ThiefBot Implementations:
 
-ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp) : Robot(health, sp, imageID, startX, startY, right, xp), m_dTravelled(0)
+ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp) : Robot(health, sp, imageID, startX, startY, right, xp), m_dTravelled(0), m_StolenGoodie(NOT_GOODIE)
 {
     m_dToTurn = randInt(1, 6);
     dirs[0] = left;
@@ -304,11 +303,15 @@ void ThiefBot::ShuffleDirs()
 
 void ThiefBot::SpecialRobotAction()
 {
-    if(GetWorld()->GoodieHere(getX(), getY()))
+    if(m_StolenGoodie == NOT_GOODIE)
     {
-        // try to get goodie
-        std::cerr << "trying to steal\n";
-        return;
+        int goodieFound = GetWorld()->GoodieHere(getX(), getY());
+        if(goodieFound != NOT_GOODIE)
+        {
+            m_StolenGoodie = goodieFound;
+            GetWorld()->playSound(SOUND_ROBOT_MUNCH);
+            return;
+        }
     }
     if( !(m_dTravelled < m_dToTurn && Move()) ) // failed to move
     {
@@ -332,6 +335,12 @@ void ThiefBot::SpecialRobotAction()
         m_dTravelled++;
 }
 
+void ThiefBot::getAttacked()
+{
+    SentientActor::getAttacked();
+    if(isDead())
+        GetWorld()->HandleThiefBotDeath(this);
+}
 
 // Wall Implementations:
 
@@ -419,6 +428,16 @@ ExtraLifeGoodie::ExtraLifeGoodie(StudentWorld* sp, double startX, double startY)
 void ExtraLifeGoodie::GiveSpecificBenefit()
 {
     GetWorld()->incLives();
+}
+
+// Restore Health Implementations
+
+RestoreHealthGoodie::RestoreHealthGoodie(StudentWorld* sp, double startX, double startY) : Goodie(sp, IID_RESTORE_HEALTH, startX, startY, RESTORE_HEALTH_XP)
+{}
+
+void RestoreHealthGoodie::GiveSpecificBenefit()
+{
+    GetWorld()->RestorePlayerHealth();
 }
 
 // Crystal Implementations

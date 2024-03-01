@@ -96,6 +96,9 @@ int StudentWorld::init()
                     case Level::extra_life:
                         AddActor(new ExtraLifeGoodie(this, x, y));
                         break;
+                    case Level::restore_health:
+                        AddActor(new RestoreHealthGoodie(this, x, y));
+                        break;
                     case Level::player:
                         m_player = new Player(this, x, y);
                         OccupySquare(m_player);
@@ -260,9 +263,27 @@ bool StudentWorld::CanWalk(Actor* a) const
     }
 }
 
-bool StudentWorld::GoodieHere(double x, double y) const
+int StudentWorld::GoodieHere(double x, double y) const
 {
-    return (SquareWalkable(x, y) && !SquarePushable(x, y));
+    int col, row;
+    ConvertCoords(x, y, row, col);
+    if(m_grid.HasSuchOccupant(col, row, Actor::OC_NON_BARRIER))
+    {
+        for(int i = 0; i < m_Actors.size(); i++)
+        {
+            if(AreEqual(x, m_Actors[i]->getX()) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->GoodieType() != NOT_GOODIE)
+            {
+                int goodieType = NOT_GOODIE;
+                if(randInt(1, 10) == 1)     // 10% probability
+                {
+                    goodieType = m_Actors[i]->GoodieType();
+                    m_Actors[i]->Die();
+                }
+                return goodieType;
+            }
+        }
+    }
+    return NOT_GOODIE;
 }
 
 
@@ -370,7 +391,32 @@ void StudentWorld::FireFrom(Actor* a)
             return;
     }
     
-    AddActor(pea);
+    AddActor(pea);  // never add nullptr
+}
+
+
+void StudentWorld::HandleThiefBotDeath(ThiefBot* t)
+{
+    int goodieType = t->GetStolenGoodieType();
+    if(goodieType == NOT_GOODIE)
+        return;
+    else{
+        double x = t->getX();
+        double y = t->getY();
+        
+        switch(goodieType)
+        {
+            case C_AMMO:
+                AddActor(new AmmoGoodie(this, x, y));
+                break;
+            case C_EXTRA_LIFE:
+                AddActor(new ExtraLifeGoodie(this, x, y));
+                break;
+            case C_RESTORE_HEALTH:
+                AddActor(new RestoreHealthGoodie(this, x, y));
+                break;
+        }
+    }
 }
 
 // GameMap wrappers
@@ -571,16 +617,27 @@ bool StudentWorld::GameMap::SquareWalkable(int col, int row) const
 
 bool StudentWorld::GameMap::SquareAttackable(int col, int row) const
 {
-    if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT)
-    {
-        std::cerr << "invalid coordinates passed to SquareAttackable()\n";
+    if ( InvalidCoords(col, row) )
         return false;
-    }
     
     list<int>::iterator i = m_occupancyMap[row][col]->begin();
     for(; i != m_occupancyMap[row][col]->end(); i++)
     {
         if (*i == Actor::OC_KILLABLE_SHOTSTOP || *i == Actor::OC_UNKILLABLE_SHOTSTOP)
+            return true;
+    }
+    return false;
+}
+
+bool StudentWorld::GameMap::HasSuchOccupant(int col, int row, int status) const
+{
+    if(InvalidCoords(col, row) || InvalidStatus(status))
+        return false;
+    
+    list<int>::iterator i = m_occupancyMap[row][col]->begin();
+    for(; i != m_occupancyMap[row][col]->end(); i++)
+    {
+        if (*i == status)
             return true;
     }
     return false;

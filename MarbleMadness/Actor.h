@@ -2,6 +2,7 @@
 #define ACTOR_H_
 
 #include "GraphObject.h"
+#include <string>
 #include <iostream>
 
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
@@ -18,8 +19,17 @@ const int AMMO_EXTRA_PEAS = 20;
 const int LEVEL_FINISH_XP = 2000;
 const int AMMO_XP = 100;
 const int EXTRA_LIFE_XP = 1000;
+const int RESTORE_HEALTH_XP = 500;
 const int CRYSTAL_XP = 50;
 const int RAGEBOT_XP = 100;
+
+enum GoodieTypes
+{
+    NOT_GOODIE,
+    C_AMMO,
+    C_EXTRA_LIFE,
+    C_RESTORE_HEALTH
+};
 
 
 
@@ -49,10 +59,11 @@ class Actor : public GraphObject
         void Die();
         virtual void HandleDeath();
         virtual void PlayDeadSound() const {}
-        virtual void SpecificDeathAction() {}
     
         virtual bool Pushable() const;
         virtual bool Push(int dir = none);
+    
+        virtual int GoodieType() const;
     
         enum OcStatus    // important: everything after non_shotstop stops peas
         {
@@ -104,6 +115,11 @@ inline bool Actor::Pushable() const
 inline bool Actor::Push(int dir)
 {
     return false;
+}
+
+inline int Actor::GoodieType() const
+{
+    return NOT_GOODIE;
 }
 
 // KillableActor
@@ -276,15 +292,24 @@ public:
     void SetTravelled(int amt);
     void SetToTurn(int amt);
     
+    int GetStolenGoodieType() const;
+    
+    virtual void getAttacked();
     virtual void SpecialRobotAction();
 
 private:
     int m_dTravelled;
     int m_dToTurn;
     int dirs[4];
+    int m_StolenGoodie;
     
     void ShuffleDirs();
 };
+
+inline int ThiefBot::GetStolenGoodieType() const
+{
+    return m_StolenGoodie;
+}
 
 inline int ThiefBot::GetTravelled() const
 {
@@ -364,7 +389,13 @@ class AmmoGoodie : public Goodie
 public:
     AmmoGoodie(StudentWorld* sp, double startX, double startY);
     virtual void GiveSpecificBenefit();
+    virtual int GoodieType() const;
 };
+
+inline int AmmoGoodie::GoodieType() const
+{
+    return C_AMMO;
+}
 
 // Extra Life
 
@@ -373,7 +404,29 @@ class ExtraLifeGoodie : public Goodie
 public:
     ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
     virtual void GiveSpecificBenefit();
+    virtual int GoodieType() const;
+
 };
+
+inline int ExtraLifeGoodie::GoodieType() const
+{
+    return C_EXTRA_LIFE;
+}
+
+// Restore Health
+
+class RestoreHealthGoodie : public Goodie
+{
+public:
+    RestoreHealthGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+    virtual int GoodieType() const;
+};
+
+inline int RestoreHealthGoodie::GoodieType() const
+{
+    return C_RESTORE_HEALTH;
+}
 
 // Crystal
 

@@ -31,7 +31,7 @@ public:
     
     void DecCrystals();
     bool CrystalsLeft() const;
-    bool GoodieHere(double x, double y) const;
+    int GoodieHere(double x, double y) const;
     bool SamePosAsPlayer(Actor* a) const;
     bool PlayerInLOS(Actor* a) const;
     
@@ -39,6 +39,8 @@ public:
     void RestorePlayerHealth();
     
     bool CanWalk(Actor* a) const;
+    
+    void HandleThiefBotDeath(ThiefBot* t);
     
     // GameMap wrappers essentially
     bool SquareWalkable(double x, double y) const;
@@ -70,6 +72,7 @@ private:
         bool SquarePushable(int col, int row) const;
         bool MarbleWithPit(int col, int row) const;
         bool SquareAttackable(int col, int row) const;
+        bool HasSuchOccupant(int col, int row, int status) const;
         std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
         /*
          empty list at a position means that square is empty, otherwise status code of objects in lists tell about walk/push/shoot-ability
