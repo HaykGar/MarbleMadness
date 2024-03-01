@@ -25,34 +25,28 @@ public:
     virtual int move();
     virtual void cleanUp();
     
-    void UpdateGameText();
-    
-    void AddActor(Actor* a);
-    
-    void RemoveDead();
     
     bool AttackSquare(double x, double y);
     void FireFrom(Actor* a);
     
     void DecCrystals();
-    bool CrystalsLeft();
-    bool SamePosAsPlayer(Actor* a);
-    void GivePlayerPeas(unsigned int amount);
+    bool CrystalsLeft() const;
+    bool SamePosAsPlayer(Actor* a) const;
+    bool PlayerInLOS(Actor* a) const;
+    
+    void GivePlayerPeas();
     void RestorePlayerHealth();
     
-    
-    bool CanWalk(Actor* a);
-    void ConvertCoords(double x, double y, int& row, int& col);
-    void GetLevelFileName(std::string& s);
+    bool CanWalk(Actor* a) const;
     
     // GameMap wrappers essentially
-    bool SquareWalkable(double x, double y);
+    bool SquareWalkable(double x, double y) const;
     void LeaveSquare(Actor* a);
     void OccupySquare(Actor* a);
-    bool SquarePushable(double x, double y);
+    bool SquarePushable(double x, double y) const;
     bool TryToPush();
     bool MarbleWithPit(Pit* p);
-    bool SquareAttackable(double x, double y);
+    bool SquareAttackable(double x, double y) const;
 
 private:
     std::vector<Actor*> m_Actors;
@@ -66,16 +60,15 @@ private:
         ~GameMap();
         void CleanUpMap();
         
-        bool InvalidCoords(int col, int row);
-        bool InvalidStatus(int status);
-        bool InvalidStatusOrCoords(int col, int row, int status);
+        bool InvalidCoords(int col, int row) const;
+        bool InvalidStatus(int status) const;
         
         void OccupySquare(int col, int row, int status);
         void LeaveSquare(int col, int row, int status);
-        bool SquareWalkable(int col, int row);
-        bool SquarePushable(int col, int row);
-        bool MarbleWithPit(int col, int row);
-        bool SquareAttackable(int col, int row);
+        bool SquareWalkable(int col, int row) const;
+        bool SquarePushable(int col, int row) const;
+        bool MarbleWithPit(int col, int row) const;
+        bool SquareAttackable(int col, int row) const;
         std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
         /*
          empty list at a position means that square is empty, otherwise status code of objects in lists tell about walk/push/shoot-ability
@@ -84,6 +77,13 @@ private:
     GameMap m_grid;
     
     void SwallowMarble(double x, double y);
+    void ConvertCoords(double x, double y, int& row, int& col) const;
+    void GetLevelFileName(std::string& s) const;
+    void RemoveDead();
+    void UpdateGameText();
+    void AddActor(Actor* a);
+    
+    bool PathToPlayer(double x, double y, std::function<void(double&, double&)> ) const;
 };
 
 inline void StudentWorld::DecCrystals()
@@ -91,19 +91,19 @@ inline void StudentWorld::DecCrystals()
     m_nCrystals--;
 }
 
-inline bool StudentWorld::CrystalsLeft()
+inline bool StudentWorld::CrystalsLeft() const
 {
     return m_nCrystals > 0;
 }
 
-inline bool StudentWorld::SamePosAsPlayer(Actor *a)
+inline bool StudentWorld::SamePosAsPlayer(Actor *a) const
 {
     return (AreEqual(a->getX(), m_player->getX()) && AreEqual(a->getY(), m_player->getY()));
 }
 
-inline void StudentWorld::GivePlayerPeas(unsigned int amount)
+inline void StudentWorld::GivePlayerPeas()
 {
-    m_player->AddPeas(amount);
+    m_player->AddPeas(AMMO_EXTRA_PEAS);
 }
 
 inline void StudentWorld::RestorePlayerHealth()

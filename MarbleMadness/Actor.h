@@ -7,7 +7,8 @@
 // Students:  Add code to this file, Actor.cpp, StudentWorld.h, and StudentWorld.cpp
 
 const int START_PLAYER_HEALTH = 20;
-const int MARBLE_HP = 10;
+const int MARBLE_HP_START = 10;
+const int RAGEBOT_HP_START = 10;
 
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
@@ -17,6 +18,7 @@ const int LEVEL_FINISH_XP = 2000;
 const int AMMO_XP = 100;
 const int EXTRA_LIFE_XP = 1000;
 const int CRYSTAL_XP = 50;
+const int RAGEBOT_XP = 100;
 
 
 
@@ -25,6 +27,8 @@ bool AreEqual(double d1, double d2);
 
 
 class StudentWorld;
+
+// Actor
 
 class Actor : public GraphObject
 {
@@ -103,6 +107,7 @@ inline bool Actor::Push(int dir)
     return false;
 }
 
+// KillableActor
 
 class KillableActor : public Actor      // Actors that can be "killed" by peas, player, robots, and marble are killable
 {
@@ -130,6 +135,7 @@ inline int KillableActor::GetHealth() const
     return m_health;
 }
 
+// Marble
 
 class Marble : public KillableActor
 {
@@ -152,6 +158,7 @@ inline int Marble::doSomethingSpecific()
     return GWSTATUS_CONTINUE_GAME;
 }
 
+// SentientActor
 
 class SentientActor : public KillableActor  // player and Robots... specific shared behaviors
 {
@@ -170,6 +177,7 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
         
 };
 
+// Player
 
 class Player : public SentientActor     // Handle Player Death
 {
@@ -180,7 +188,7 @@ public:
     virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
     virtual void PlayFireSound() const;
-    void AddPeas(unsigned int amount);
+    void AddPeas(int amount);
     void DecPeas();
     int GetCurrentAmmo() const;
     void PlayerFire();
@@ -201,83 +209,13 @@ inline int Player::GetCurrentAmmo() const
     return m_nPeas;
 }
 
-inline void Player::AddPeas(unsigned int amount)
+inline void Player::AddPeas(int amount)
 {
-    m_nPeas += amount;
+    if(amount > 0)
+        m_nPeas += amount;
 }
 
-
-class Wall : public Actor   // public shotStopper ???
-{
-public:
-    Wall(StudentWorld* sp, double startX, double startY);
-    
-    virtual int doSomethingSpecific();
-};
-
-inline int Wall::doSomethingSpecific()
-{
-    return GWSTATUS_CONTINUE_GAME;
-}
-
-
-class Pea : public Actor    // change parent class later
-{
-public:
-    Pea(StudentWorld* sp, double startX, double startY, int dir);
-    
-    virtual int doSomethingSpecific();
-};
-
-
-class Exit : public Actor
-{
-    public:
-    
-    Exit(StudentWorld* sp, double startX, double startY);
-    
-    virtual int doSomethingSpecific();
-    virtual void PlayDeadSound() const;
-};
-
-class Goodie : public Actor
-{
-public:
-    Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
-    virtual ~Goodie() {}
-    
-    virtual void GiveSpecificBenefit() = 0;
-    virtual int doSomethingSpecific();
-    virtual void PlayDeadSound() const;
-};
-
-class AmmoGoodie : public Goodie
-{
-public:
-    AmmoGoodie(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-};
-
-class ExtraLifeGoodie : public Goodie
-{
-public:
-    ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-};
-
-class Crystal : public Goodie
-{
-public:
-    Crystal(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-};
-
-class Pit : public Actor
-{
-public:
-    Pit(StudentWorld* sp, double startX, double startY);
-    virtual int doSomethingSpecific();
-};
+// Robot
 
 class Robot : public SentientActor
 {
@@ -304,5 +242,111 @@ bool Robot::NeedsToRest() const
 {
     return m_ticksWaited < m_ticksPerAction - 1;
 }
+
+// RageBot:
+
+class RageBot : public Robot
+{
+public:
+    RageBot(StudentWorld* sp, double startX, double startY, int dir);
+    virtual void SpecialRobotAction();
+    void ResetDirection();
+    
+private:
+    bool m_dirIndex;
+    int m_dirs[2];
+};
+
+inline void RageBot::ResetDirection()
+{
+    setDirection(m_dirs[m_dirIndex]);
+}
+
+// Wall
+
+class Wall : public Actor   // public shotStopper ???
+{
+public:
+    Wall(StudentWorld* sp, double startX, double startY);
+    
+    virtual int doSomethingSpecific();
+};
+
+inline int Wall::doSomethingSpecific()
+{
+    return GWSTATUS_CONTINUE_GAME;
+}
+
+// Pea
+
+class Pea : public Actor    // change parent class later
+{
+public:
+    Pea(StudentWorld* sp, double startX, double startY, int dir);
+    
+    virtual int doSomethingSpecific();
+};
+
+// Exit
+
+class Exit : public Actor
+{
+    public:
+    
+    Exit(StudentWorld* sp, double startX, double startY);
+    
+    virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
+};
+
+// Goodie
+
+class Goodie : public Actor
+{
+public:
+    Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
+    virtual ~Goodie() {}
+    
+    virtual void GiveSpecificBenefit() = 0;
+    virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
+};
+
+// Ammo Goodie
+
+class AmmoGoodie : public Goodie
+{
+public:
+    AmmoGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+// Extra Life
+
+class ExtraLifeGoodie : public Goodie
+{
+public:
+    ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+// Crystal
+
+class Crystal : public Goodie
+{
+public:
+    Crystal(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+// Pit
+
+class Pit : public Actor
+{
+public:
+    Pit(StudentWorld* sp, double startX, double startY);
+    virtual int doSomethingSpecific();
+};
+
 
 #endif // ACTOR_H_

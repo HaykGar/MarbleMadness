@@ -56,7 +56,7 @@ void KillableActor::getAttacked()
 
 // Marble Implementations
 
-Marble::Marble(StudentWorld* sp, double startX, double startY) : KillableActor(MARBLE_HP, sp, IID_MARBLE, startX, startY, OC_KILLABLE_SHOTSTOP, none, 0)
+Marble::Marble(StudentWorld* sp, double startX, double startY) : KillableActor(MARBLE_HP_START, sp, IID_MARBLE, startX, startY, OC_KILLABLE_SHOTSTOP, none, 0)
 {}
 
 void Marble::MarbleMove(int dir)    // find nicer way?
@@ -106,7 +106,8 @@ SentientActor::SentientActor(int health, StudentWorld* sp, int imageID, double s
 void SentientActor::getAttacked()
 {
     KillableActor::getAttacked();
-    PlayAttackedSound();
+    if(!isDead())
+        PlayAttackedSound();
 }
 
 bool SentientActor::WalkCondition()
@@ -178,7 +179,7 @@ int Player::doSomethingSpecific()
                 PlayerFire();
                 break;
             case KEY_PRESS_ESCAPE:
-                Die();
+                HandleDeath();
                 return GWSTATUS_PLAYER_DIED;
             default:
                 break;
@@ -241,6 +242,38 @@ void Robot::PlayFireSound() const
 }
 
 
+// RageBot Implementations
+
+RageBot::RageBot(StudentWorld* sp, double startX, double startY, int dir) : Robot(RAGEBOT_HP_START, sp, IID_RAGEBOT, startX, startY, dir, RAGEBOT_XP), m_dirIndex(false)
+{
+    switch (dir) // given right or down based on vertical or horizontal RageBot
+    {
+        case right:
+            m_dirs[0] = right;
+            m_dirs[1] = left;
+            break;
+        case down:
+            m_dirs[0] = down;
+            m_dirs[1] = up;
+        default:
+            std::cerr << "Error, invalid dir parameter for ragebot\n";
+            break;
+    }
+}
+
+void RageBot::SpecialRobotAction()
+{
+    if(GetWorld()->PlayerInLOS(this))
+    {
+        Attack();
+        return;
+    }
+    if(!Move())
+    {
+        m_dirIndex = !m_dirIndex;
+        ResetDirection();       // change dir to opposite direction
+    }
+}
 
 // Wall Implementations:
 
@@ -274,13 +307,16 @@ Exit::Exit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_EXIT,
 
 void Exit::PlayDeadSound() const
 {
-    GetWorld()->playSound(GWSTATUS_FINISHED_LEVEL);
+    GetWorld()->playSound(SOUND_FINISHED_LEVEL);
 }
 
 int Exit::doSomethingSpecific()
 {
     if(!isVisible() && !GetWorld()->CrystalsLeft()) // no crystals left
+    {
         setVisible(true);
+        GetWorld()->playSound(SOUND_REVEAL_EXIT);
+    }
     if( isVisible() && GetWorld()->SamePosAsPlayer(this) )
     {
         HandleDeath();
@@ -315,7 +351,7 @@ AmmoGoodie::AmmoGoodie(StudentWorld* sp, double startX, double startY) : Goodie(
 
 void AmmoGoodie::GiveSpecificBenefit()
 {
-    GetWorld()->GivePlayerPeas(AMMO_EXTRA_PEAS);
+    GetWorld()->GivePlayerPeas();
 }
 
 // Extra Life Goodie Implementations

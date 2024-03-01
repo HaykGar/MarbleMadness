@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <functional>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -22,7 +23,7 @@ StudentWorld::~StudentWorld()
     cleanUp();
 }
 
-void StudentWorld::GetLevelFileName(std::string& s)
+void StudentWorld::GetLevelFileName(std::string& s) const
 {
     std::ostringstream currentLevel;
 
@@ -60,7 +61,6 @@ int StudentWorld::init()
         {
             for(int y = 0; y < VIEW_HEIGHT; y++)
             {
-                Actor* newActor = nullptr;
                 Level::MazeEntry ge = lev.getContentsOf(x,y);
                 switch (ge)
                 {
@@ -68,34 +68,33 @@ int StudentWorld::init()
                         break;
                     case Level::wall:
                     {
-                        newActor = new Wall(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new Wall(this, x, y));
                         break;
                     }
                     case Level::crystal:
                         m_nCrystals++;
-                        newActor = new Crystal(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new Crystal(this, x, y));
                         break;
                     case Level::ammo:
-                        newActor = new AmmoGoodie(this, x, y);
-                        AddActor(newActor);
-                        break;
-                    case Level::extra_life:
-                        newActor = new ExtraLifeGoodie(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new AmmoGoodie(this, x, y));
                         break;
                     case Level::marble:
-                        newActor = new Marble(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new Marble(this, x, y));
                         break;
                     case Level::pit:
-                        newActor = new Pit(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new Pit(this, x, y));
+                        break;
+                    case Level::horiz_ragebot:
+                        AddActor(new RageBot(this, x, y, Actor::right));
+                        break;
+                    case Level::vert_ragebot:
+                        AddActor(new RageBot(this, x, y, Actor::down));
                         break;
                     case Level::exit:
-                        newActor = new Exit(this, x, y);
-                        AddActor(newActor);
+                        AddActor(new Exit(this, x, y));
+                        break;
+                    case Level::extra_life:
+                        AddActor(new ExtraLifeGoodie(this, x, y));
                         break;
                     case Level::player:
                         m_player = new Player(this, x, y);
@@ -233,13 +232,13 @@ bool StudentWorld::TryToPush()
     return false;
 }
 
-void StudentWorld::ConvertCoords(double x, double y, int& row, int& col)
+void StudentWorld::ConvertCoords(double x, double y, int& row, int& col) const
 {
     col = std::round(x);
     row = VIEW_HEIGHT-1-std::round(y);
 }
 
-bool StudentWorld::CanWalk(Actor* a)
+bool StudentWorld::CanWalk(Actor* a) const
 {
     double x = a->getX();
     double y = a->getY();
@@ -261,6 +260,52 @@ bool StudentWorld::CanWalk(Actor* a)
     }
 }
 
+bool StudentWorld::PlayerInLOS(Actor *a) const  // set max depth to guard against infinite recursion?
+{
+    if(a == nullptr)
+    {
+        std::cerr << "Error, nullptr passed to PlayerInLOS\n";
+        return false;
+    }
+    // Helper lambda function to avoid redundant dir check
+    std::function<void(double&, double&)> modifyParams;
+    switch (a->getDirection()) {
+        case Actor::left:
+            modifyParams = [&](double& x, double& y) -> void
+            { x--; };
+            break;
+        case Actor::right:
+            modifyParams = [&](double& x, double& y) -> void
+            { x++; };
+            break;
+        case Actor::up:
+            modifyParams = [&](double& x, double& y) -> void
+            { y++; };
+            break;
+        case Actor::down:
+            modifyParams = [&](double& x, double& y) -> void
+            { y--; };
+            break;
+        default:
+            std::cerr << "Error, invalid direction\n";
+            return false;
+    }
+    
+    return PathToPlayer(a->getX(), a->getY(), modifyParams);
+}
+
+bool StudentWorld::PathToPlayer(double x, double y, std::function<void(double&, double&)> modifyParams) const
+{
+    modifyParams(x, y);
+    if (AreEqual(m_player->getX(), x) && AreEqual(m_player->getY(), y))
+        return true;
+    else if (SquareAttackable(x, y))
+        return false;
+    else{
+        return PathToPlayer(x, y, modifyParams);
+    }
+}
+
 void StudentWorld::SwallowMarble(double x, double y)
 {
     for(int i = 0; i < m_Actors.size(); i++)
@@ -276,6 +321,11 @@ bool StudentWorld::AttackSquare(double x, double y)
     if(!SquareAttackable(x, y))
         return false;   // no point iterating in next step
     
+    if( AreEqual(x, m_player->getX()) && AreEqual(y, m_player->getY()) )
+    {
+        m_player->getAttacked();
+        return true;
+    }
     for(int i = 0; i < m_Actors.size(); i++)
     {
         if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > Actor::OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < Actor::END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
@@ -341,14 +391,14 @@ void StudentWorld::OccupySquare(Actor* a)
     m_grid.OccupySquare(col, row, status);
 }
 
-bool StudentWorld::SquareWalkable(double x, double y)
+bool StudentWorld::SquareWalkable(double x, double y) const
 {
     int row, col;
     ConvertCoords(x, y, row, col);
     return m_grid.SquareWalkable(col, row);
 }
 
-bool StudentWorld::SquarePushable(double x, double y)
+bool StudentWorld::SquarePushable(double x, double y) const
 {
     int row, col;
     ConvertCoords(x, y, row, col);
@@ -369,7 +419,7 @@ bool StudentWorld::MarbleWithPit(Pit* p)
 }
 
 
-bool StudentWorld::SquareAttackable(double x, double y)
+bool StudentWorld::SquareAttackable(double x, double y) const
 {
     int row, col;
     ConvertCoords(x, y, row, col);
@@ -399,7 +449,7 @@ void StudentWorld::GameMap::CleanUpMap()
             m_occupancyMap[i][j]->clear();
 }
 
-bool StudentWorld::GameMap::InvalidCoords(int col, int row)
+bool StudentWorld::GameMap::InvalidCoords(int col, int row) const
 {
     if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT)
     {
@@ -409,7 +459,7 @@ bool StudentWorld::GameMap::InvalidCoords(int col, int row)
     return false;
 }
 
-bool StudentWorld::GameMap::InvalidStatus(int status)
+bool StudentWorld::GameMap::InvalidStatus(int status) const
 {
     if (status <= Actor::OC_ERROR || status >= Actor::END_NOT_A_STATUS)
     {
@@ -419,14 +469,10 @@ bool StudentWorld::GameMap::InvalidStatus(int status)
     return false;
 }
 
-bool StudentWorld::GameMap::InvalidStatusOrCoords(int col, int row, int status)
-{
-    return InvalidStatus(status) || InvalidCoords(col, row);
-}
 
 void StudentWorld::GameMap::LeaveSquare(int col, int row, int status)
 {
-    if ( InvalidStatusOrCoords(col, row, status) )
+    if ( InvalidStatus(status) || InvalidCoords(col, row) )
     {
         std::cerr << "Error leaving square";
         return;
@@ -447,7 +493,7 @@ void StudentWorld::GameMap::LeaveSquare(int col, int row, int status)
 
 void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
 {
-    if ( InvalidStatusOrCoords(col, row, status) )
+    if ( InvalidStatus(status) || InvalidCoords(col, row) )
     {
         std::cerr << "Error occupying square\n";
         return;
@@ -456,7 +502,7 @@ void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
     m_occupancyMap[row][col]->push_back(status);
 }
 
-bool StudentWorld::GameMap::SquarePushable(int col, int row)
+bool StudentWorld::GameMap::SquarePushable(int col, int row) const
 {
     if ( InvalidCoords(col, row) )
     {
@@ -476,7 +522,7 @@ bool StudentWorld::GameMap::SquarePushable(int col, int row)
     return false;
 }
 
-bool StudentWorld::GameMap::MarbleWithPit(int col, int row)
+bool StudentWorld::GameMap::MarbleWithPit(int col, int row) const
 {
     
     if ( InvalidCoords(col, row) )
@@ -500,7 +546,7 @@ bool StudentWorld::GameMap::MarbleWithPit(int col, int row)
     return false;
 }
 
-bool StudentWorld::GameMap::SquareWalkable(int col, int row)
+bool StudentWorld::GameMap::SquareWalkable(int col, int row) const
 {
     if ( InvalidCoords(col, row) )
     {
@@ -517,7 +563,7 @@ bool StudentWorld::GameMap::SquareWalkable(int col, int row)
     return true;    // loop didn't execute or only goodies
 }
 
-bool StudentWorld::GameMap::SquareAttackable(int col, int row)
+bool StudentWorld::GameMap::SquareAttackable(int col, int row) const
 {
     if ( col < 0 || col >= VIEW_WIDTH || row < 0 || row >= VIEW_HEIGHT)
     {
