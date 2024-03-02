@@ -44,7 +44,7 @@ class Actor : public GraphObject
         virtual ~Actor() {}
         
         void SetPos(double x, double y);
-        int doSomething();
+        int doSomething();  // make void, use bool member variable in student world to keep track of game ending
         virtual int doSomethingSpecific() = 0;
         virtual void getAttacked() {}
         void MoveOne();
@@ -61,6 +61,8 @@ class Actor : public GraphObject
         virtual bool Push(int dir = none);
     
         virtual bool isStealableGoodie() const;
+        virtual bool isThief() const;
+        virtual Actor* StolenGoodie() const;
     
     
         enum OcStatus    // important: everything after non_shotstop stops peas
@@ -79,6 +81,13 @@ class Actor : public GraphObject
         int m_occupancyStatus;
         int m_XPVal;
 };
+
+
+
+inline bool Actor::isThief() const
+{
+    return false;
+}
 
 inline bool Actor::isStealableGoodie() const
 {
@@ -122,7 +131,7 @@ inline bool Actor::Push(int dir)
 
 // Wall
 
-class Wall : public Actor   // public shotStopper ???
+class Wall : public Actor
 {
 public:
     Wall(StudentWorld* sp, double startX, double startY);
@@ -137,7 +146,7 @@ inline int Wall::doSomethingSpecific()
 
 // Pea
 
-class Pea : public Actor    // change parent class later
+class Pea : public Actor
 {
 public:
     Pea(StudentWorld* sp, double startX, double startY, int dir);
@@ -171,7 +180,8 @@ public:
     virtual bool isStealableGoodie() const;
 };
 
-inline bool Goodie::isStealableGoodie() const{
+inline bool Goodie::isStealableGoodie() const
+{
     return true;
 }
 
@@ -203,7 +213,6 @@ public:
     RestoreHealthGoodie(StudentWorld* sp, double startX, double startY);
     virtual void GiveSpecificBenefit();
 };
-
 
 // Crystal
 
@@ -392,6 +401,9 @@ class ThiefBot : public Robot
 {
 public:
     ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp);
+    ThiefBot(StudentWorld* sp, double startX, double startY);
+    
+    virtual bool isThief() const;
     
     int GetTravelled() const;
     int GetToTurn() const;
@@ -416,9 +428,9 @@ private:
     void ShuffleDirs();
 };
 
-inline Actor* ThiefBot::StolenGoodie() const
+inline bool ThiefBot::isThief() const
 {
-    return m_stolenGoodie;
+    return true;
 }
 
 
@@ -449,121 +461,45 @@ public:
     virtual void SpecialRobotAction();
 };
 
+// Factory
 
-
-// Wall
-
-class Wall : public Actor   // public shotStopper ???
+class Factory : public Actor
 {
 public:
-    Wall(StudentWorld* sp, double startX, double startY);
-    
+    Factory(StudentWorld* sp, double startX, double startY);
+    int ThiefBotsNearby() const;
     virtual int doSomethingSpecific();
+    virtual Actor* NewActor() const = 0;
+    void ManufactureActor() const;
 };
 
-inline int Wall::doSomethingSpecific()
+// RegFactory
+
+class RegFactory : public Factory
 {
-    return GWSTATUS_CONTINUE_GAME;
+public:
+    RegFactory(StudentWorld* sp, double startX, double startY) : Factory(sp, startX, startY) {}    virtual Actor* NewActor() const;
+};
+
+inline Actor* RegFactory::NewActor() const
+{
+    return new ThiefBot(GetWorld(), getX(), getY());
 }
 
-// Pea
+// MeanFactory
 
-class Pea : public Actor    // change parent class later
+class MeanFactory : public Factory
 {
 public:
-    Pea(StudentWorld* sp, double startX, double startY, int dir);
+    MeanFactory(StudentWorld* sp, double startX, double startY) : Factory(sp, startX, startY) {}
     
-    virtual int doSomethingSpecific();
+    virtual Actor* NewActor() const;
 };
 
-// Exit
-
-class Exit : public Actor
+inline Actor* MeanFactory::NewActor() const
 {
-    public:
-    
-    Exit(StudentWorld* sp, double startX, double startY);
-    
-    virtual int doSomethingSpecific();
-    virtual void PlayDeadSound() const;
-};
-
-// Goodie
-
-class Goodie : public Actor
-{
-public:
-    Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
-    virtual ~Goodie() {}
-    
-    virtual void GiveSpecificBenefit() = 0;
-    virtual int doSomethingSpecific();
-    virtual void PlayDeadSound() const;
-};
-
-// Ammo Goodie
-
-class AmmoGoodie : public Goodie
-{
-public:
-    AmmoGoodie(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-    virtual int GoodieType() const;
-};
-
-inline int AmmoGoodie::GoodieType() const
-{
-    return C_AMMO;
+    return new MeanThiefBot(GetWorld(), getX(), getY());
 }
-
-// Extra Life
-
-class ExtraLifeGoodie : public Goodie
-{
-public:
-    ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-    virtual int GoodieType() const;
-
-};
-
-inline int ExtraLifeGoodie::GoodieType() const
-{
-    return C_EXTRA_LIFE;
-}
-
-// Restore Health
-
-class RestoreHealthGoodie : public Goodie
-{
-public:
-    RestoreHealthGoodie(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-    virtual int GoodieType() const;
-};
-
-inline int RestoreHealthGoodie::GoodieType() const
-{
-    return C_RESTORE_HEALTH;
-}
-
-// Crystal
-
-class Crystal : public Goodie
-{
-public:
-    Crystal(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
-};
-
-// Pit
-
-class Pit : public Actor
-{
-public:
-    Pit(StudentWorld* sp, double startX, double startY);
-    virtual int doSomethingSpecific();
-};
 
 
 #endif // ACTOR_H_

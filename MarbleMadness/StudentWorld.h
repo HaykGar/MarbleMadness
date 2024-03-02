@@ -25,6 +25,7 @@ public:
     virtual int move();
     virtual void cleanUp();
     
+    void AddActor(Actor* a);
     
     bool AttackSquare(double x, double y);
     void FireFrom(Actor* a);
@@ -50,6 +51,7 @@ public:
     bool TryToPush();
     bool MarbleWithPit(Pit* p);
     bool SquareAttackable(double x, double y) const;
+    bool HasSuchOccupant(double x, double y, int status) const;
 
 private:
     std::vector<Actor*> m_Actors;
@@ -85,7 +87,6 @@ private:
     void GetLevelFileName(std::string& s) const;
     void RemoveDead();
     void UpdateGameText();
-    void AddActor(Actor* a);
     
     bool PathToPlayer(double x, double y, std::function<void(double&, double&)> ) const;
 };

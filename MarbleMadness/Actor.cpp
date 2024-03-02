@@ -14,6 +14,10 @@ bool AreEqual(double d1, double d2)
 Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat), m_XPVal(xp)
 {}
 
+Actor* Actor::StolenGoodie() const
+{
+    return nullptr;
+}
 
 int Actor::doSomething()
 {
@@ -299,6 +303,7 @@ RageBot::RageBot(StudentWorld* sp, double startX, double startY, int dir) : Robo
         case down:
             m_dirs[0] = down;
             m_dirs[1] = up;
+            break;
         default:
             std::cerr << "Error, invalid dir parameter for ragebot\n";
             break;
@@ -324,6 +329,20 @@ ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, i
     dirs[1] = right;
     dirs[2] = up;
     dirs[3] = down;
+}
+
+ThiefBot::ThiefBot(StudentWorld* sp, double startX, double startY) : Robot(REG_THIEFBOT_HP_START, sp, IID_THIEFBOT, startX, startY, right, REG_THIEFBOT_XP)
+{
+    m_dToTurn = randInt(1, 6);
+    dirs[0] = left;
+    dirs[1] = right;
+    dirs[2] = up;
+    dirs[3] = down;
+}
+
+Actor* ThiefBot::StolenGoodie() const
+{
+    return m_stolenGoodie;
 }
 
 void ThiefBot::ShuffleDirs()
@@ -393,6 +412,30 @@ void MeanThiefBot::SpecialRobotAction()
 {
     if(!ShootPlayer())
         ThiefBot::SpecialRobotAction();
+}
+
+// Factory
+
+Factory::Factory(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_ROBOT_FACTORY, startX, startY, OC_UNKILLABLE_SHOTSTOP, none, 0) {}
+
+int Factory::ThiefBotsNearby() const
+{
+    return 0; // FIX ME !!!!!!!!
+}
+
+void Factory::ManufactureActor() const
+{
+    GetWorld()->AddActor(NewActor());
+    GetWorld()->playSound(SOUND_ROBOT_BORN);
+}
+
+int Factory::doSomethingSpecific()
+{
+    if(ThiefBotsNearby() < 3 && !GetWorld()->HasSuchOccupant(getX(), getY(), OC_KILLABLE_SHOTSTOP))   // Only thiefbots can be on the same square as the factory
+        if (randInt(1, 50) == 10)
+            ManufactureActor();
+    
+    return GWSTATUS_CONTINUE_GAME;
 }
 
 // Wall Implementations:

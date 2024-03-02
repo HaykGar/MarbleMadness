@@ -90,6 +90,12 @@ int StudentWorld::init()
                     case Level::vert_ragebot:
                         AddActor(new RageBot(this, x, y, Actor::down));
                         break;
+                    case Level::thiefbot_factory:
+                        AddActor(new RegFactory(this, x, y));
+                        break;
+                    case Level::mean_thiefbot_factory:
+                        AddActor(new MeanFactory(this, x, y));
+                        break;
                     case Level::exit:
                         AddActor(new Exit(this, x, y));
                         break;
@@ -110,7 +116,7 @@ int StudentWorld::init()
         }
     }
     
-    AddActor(new MeanThiefBot(this, 13, 2));     //ERASE ME
+    AddActor(new ThiefBot(this, 1, 10)); 
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -166,9 +172,12 @@ void StudentWorld::cleanUp()
     long int last = m_Actors.size() - 1;
     while(last >= 0)
     {
+        if(m_Actors[last]->isThief())
+            delete m_Actors[last]->StolenGoodie();
+        
         delete m_Actors[last];
         m_Actors.pop_back();
-        last--;
+        last= m_Actors.size() - 1;
     }
     delete m_player;
     m_player = nullptr;
@@ -265,9 +274,7 @@ bool StudentWorld::CanWalk(Actor* a) const
 
 Actor* StudentWorld::GoodieHere(double x, double y)
 {
-    int col, row;
-    ConvertCoords(x, y, row, col);
-    if(m_grid.HasSuchOccupant(col, row, Actor::OC_NON_BARRIER))
+    if(HasSuchOccupant(x, y, Actor::OC_NON_BARRIER))
     {
         for(int i = 0; i < m_Actors.size(); i++)
         {
@@ -356,16 +363,22 @@ bool StudentWorld::AttackSquare(double x, double y)
         m_player->getAttacked();
         return true;
     }
+    bool hitSomething = false;
     for(int i = 0; i < m_Actors.size(); i++)
     {
         if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > Actor::OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < Actor::END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
         {
-            m_Actors[i]->getAttacked();
-            return true;
+            if(m_Actors[i]->GetOcStatus() == Actor::OC_UNKILLABLE_SHOTSTOP)
+                hitSomething = true;
+            else
+            {
+                m_Actors[i]->getAttacked();
+                return true;
+            }
+            
         }
     }
-    std::cerr << "Unexpected behavior, no actors attacked\n";
-    return false;
+    return hitSomething;
 }
 
 void StudentWorld::FireFrom(Actor* a)
@@ -466,6 +479,13 @@ bool StudentWorld::SquareAttackable(double x, double y) const
     int row, col;
     ConvertCoords(x, y, row, col);
     return m_grid.SquareAttackable(col, row);
+}
+
+bool StudentWorld::HasSuchOccupant(double x, double y, int status) const
+{
+    int row, col;
+    ConvertCoords(x, y, row, col);
+    return m_grid.HasSuchOccupant(col, row, status);
 }
 
 // GameMap struct implementations
