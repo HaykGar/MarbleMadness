@@ -468,8 +468,9 @@ class Factory : public Actor
 public:
     Factory(StudentWorld* sp, double startX, double startY);
     virtual int doSomethingSpecific();
-    virtual Actor* NewActor() const = 0;
     void ManufactureActor() const;
+private:
+    virtual Actor* NewActor() const = 0;
 };
 
 // RegFactory

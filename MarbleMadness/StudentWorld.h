@@ -30,7 +30,7 @@ public:
     bool AttackSquare(double x, double y);
     void FireFrom(Actor* a);
     
-    void DecCrystals();
+    void DecCrystals(Crystal* c);   // check if crystal is dead then decrement
     bool CrystalsLeft() const;
     Actor* GoodieHere(double x, double y);
     bool SamePosAsPlayer(Actor* a) const;
@@ -99,9 +99,13 @@ private:
     bool PathToPlayer(double x, double y, std::function<void(double&, double&)> ) const;
 };
 
-inline void StudentWorld::DecCrystals()
+inline void StudentWorld::DecCrystals(Crystal* c)
 {
-    m_nCrystals--;
+    if(c->isDead())
+        m_nCrystals--;
+    else{
+        std::cerr << "nCrystals should only be decremented when on is removed from the game\n";
+    }
 }
 
 inline bool StudentWorld::CrystalsLeft() const

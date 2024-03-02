@@ -116,7 +116,6 @@ int StudentWorld::init()
         }
     }
     
-    AddActor(new ThiefBot(this, 1, 10)); 
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -286,7 +285,8 @@ Actor* StudentWorld::GoodieHere(double x, double y)
                 {
                     stolen = m_Actors[i];
                     LeaveSquare(m_Actors[i]);
-                    m_Actors[i]->SetPos(-10, -10);    // move offscreen (fix me)
+                    m_Actors[i]->SetPos(0 ,0);
+                    m_Actors[i]->setVisible(false);
                     m_Actors.erase(m_Actors.begin()+i); // remove this goodie from Actors vector so it will not be part of the game
                 }
                 return stolen;
@@ -338,9 +338,8 @@ bool StudentWorld::PathToPlayer(double x, double y, std::function<void(double&, 
         return true;
     else if (SquareAttackable(x, y))
         return false;
-    else{
+    else
         return PathToPlayer(x, y, modifyParams);
-    }
 }
 
 void StudentWorld::SwallowMarble(double x, double y)
@@ -418,6 +417,7 @@ void StudentWorld::HandleThiefBotDeath(ThiefBot* t)
         return;
     else{
         stolen->SetPos(t->getX(), t->getY());
+        stolen->setVisible(true);
         AddActor(stolen);   // bring stolen goodie back to the game
     }
 }

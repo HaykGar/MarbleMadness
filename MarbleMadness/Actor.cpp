@@ -539,7 +539,7 @@ Crystal::Crystal (StudentWorld* sp, double startX, double startY) : Goodie(sp, I
 
 void Crystal::GiveSpecificBenefit()
 {
-    GetWorld()->DecCrystals();  // let world know there are one fewer crystals
+    GetWorld()->DecCrystals(this);  // let world know there are one fewer crystals
 }
 
 // Pit Implementations
