@@ -467,7 +467,6 @@ class Factory : public Actor
 {
 public:
     Factory(StudentWorld* sp, double startX, double startY);
-    int ThiefBotsNearby() const;
     virtual int doSomethingSpecific();
     virtual Actor* NewActor() const = 0;
     void ManufactureActor() const;

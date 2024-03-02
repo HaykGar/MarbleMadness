@@ -43,6 +43,8 @@ public:
     
     void HandleThiefBotDeath(ThiefBot* t);
     
+    bool ThreeThievesWithin3(double x, double y) const;
+    
     // GameMap wrappers essentially
     bool SquareWalkable(double x, double y) const;
     void LeaveSquare(Actor* a);
@@ -58,7 +60,13 @@ private:
     Player* m_player;
     int m_nCrystals;
     unsigned int m_Bonus;
-
+    
+    struct Coord
+    {
+        Coord(double x, double y) : x_c(x), y_c(y) {}
+        double x_c;
+        double y_c;
+    };
     struct GameMap
     {
         GameMap();

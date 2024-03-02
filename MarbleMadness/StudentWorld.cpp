@@ -286,7 +286,7 @@ Actor* StudentWorld::GoodieHere(double x, double y)
                 {
                     stolen = m_Actors[i];
                     LeaveSquare(m_Actors[i]);
-                    m_Actors[i]->SetPos(-1, -1);    // move offscreen (fix me)
+                    m_Actors[i]->SetPos(-10, -10);    // move offscreen (fix me)
                     m_Actors.erase(m_Actors.begin()+i); // remove this goodie from Actors vector so it will not be part of the game
                 }
                 return stolen;
@@ -420,6 +420,49 @@ void StudentWorld::HandleThiefBotDeath(ThiefBot* t)
         stolen->SetPos(t->getX(), t->getY());
         AddActor(stolen);   // bring stolen goodie back to the game
     }
+}
+
+bool StudentWorld::ThreeThievesWithin3(double x, double y) const
+{
+    x = std::round(x);
+    y = std::round(y);
+    int possibleThieves = 0;
+    std::list<Coord> possiblePos;
+    for(int i = x - 3; i <= x + 3; i++ )
+    {
+        if(i >= 0 && i < VIEW_WIDTH)
+        {
+            for(int j = y - 3; j <= y + 3; j++)
+            {
+                if(j >= 0 && j < VIEW_HEIGHT && HasSuchOccupant(i, j, Actor::OC_KILLABLE_SHOTSTOP))
+                {
+                    possibleThieves++;
+                    possiblePos.push_back(Coord(i, j));
+                }
+            }
+        }
+        
+    }
+    if(possiblePos.size() < 3)
+        return false;
+    
+    int thievesFound = 0;
+    for(long int i = m_Actors.size() - 1; i >= 0; i--)
+    {
+        std::list<Coord>::iterator it = possiblePos.begin();
+        for(;it != possiblePos.end(); it++)
+        {
+            if(AreEqual(it->x_c, m_Actors[i]->getX()) &&
+               AreEqual(it->y_c, m_Actors[i]->getY())){
+                thievesFound++;
+                break;
+            }
+        }
+        if(thievesFound == 3)
+            return true;
+    }
+    
+    return false;
 }
 
 // GameMap wrappers

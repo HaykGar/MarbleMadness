@@ -418,10 +418,6 @@ void MeanThiefBot::SpecialRobotAction()
 
 Factory::Factory(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_ROBOT_FACTORY, startX, startY, OC_UNKILLABLE_SHOTSTOP, none, 0) {}
 
-int Factory::ThiefBotsNearby() const
-{
-    return 0; // FIX ME !!!!!!!!
-}
 
 void Factory::ManufactureActor() const
 {
@@ -431,7 +427,7 @@ void Factory::ManufactureActor() const
 
 int Factory::doSomethingSpecific()
 {
-    if(ThiefBotsNearby() < 3 && !GetWorld()->HasSuchOccupant(getX(), getY(), OC_KILLABLE_SHOTSTOP))   // Only thiefbots can be on the same square as the factory
+    if(!( GetWorld()->ThreeThievesWithin3(getX(), getY()) || GetWorld()->HasSuchOccupant(getX(), getY(), OC_KILLABLE_SHOTSTOP) ))   // Only thiefbots can be on the same square as the factory
         if (randInt(1, 50) == 10)
             ManufactureActor();
     
