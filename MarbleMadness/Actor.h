@@ -26,13 +26,6 @@ const int RAGEBOT_XP = 100;
 const int REG_THIEFBOT_XP = 10;
 const int MEAN_THIEFBOT_XP = 20;
 
-enum GoodieTypes
-{
-    NOT_GOODIE,
-    C_AMMO,
-    C_EXTRA_LIFE,
-    C_RESTORE_HEALTH
-};
 
 
 
@@ -50,6 +43,7 @@ class Actor : public GraphObject
         Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
         virtual ~Actor() {}
         
+        void SetPos(double x, double y);
         int doSomething();
         virtual int doSomethingSpecific() = 0;
         virtual void getAttacked() {}
@@ -66,7 +60,8 @@ class Actor : public GraphObject
         virtual bool Pushable() const;
         virtual bool Push(int dir = none);
     
-        virtual int GoodieType() const;
+        virtual bool isStealableGoodie() const;
+    
     
         enum OcStatus    // important: everything after non_shotstop stops peas
         {
@@ -84,6 +79,11 @@ class Actor : public GraphObject
         int m_occupancyStatus;
         int m_XPVal;
 };
+
+inline bool Actor::isStealableGoodie() const
+{
+    return false;
+}
 
 inline int Actor::GetOcStatus() const
 {
@@ -120,10 +120,115 @@ inline bool Actor::Push(int dir)
     return false;
 }
 
-inline int Actor::GoodieType() const
+// Wall
+
+class Wall : public Actor   // public shotStopper ???
 {
-    return NOT_GOODIE;
+public:
+    Wall(StudentWorld* sp, double startX, double startY);
+    
+    virtual int doSomethingSpecific();
+};
+
+inline int Wall::doSomethingSpecific()
+{
+    return GWSTATUS_CONTINUE_GAME;
 }
+
+// Pea
+
+class Pea : public Actor    // change parent class later
+{
+public:
+    Pea(StudentWorld* sp, double startX, double startY, int dir);
+    
+    virtual int doSomethingSpecific();
+};
+
+// Exit
+
+class Exit : public Actor
+{
+    public:
+    
+    Exit(StudentWorld* sp, double startX, double startY);
+    
+    virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
+};
+
+// Goodie
+
+class Goodie : public Actor
+{
+public:
+    Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
+    virtual ~Goodie() {}
+    
+    virtual void GiveSpecificBenefit() = 0;
+    virtual int doSomethingSpecific();
+    virtual void PlayDeadSound() const;
+    virtual bool isStealableGoodie() const;
+};
+
+inline bool Goodie::isStealableGoodie() const{
+    return true;
+}
+
+// Ammo Goodie
+
+class AmmoGoodie : public Goodie
+{
+public:
+    AmmoGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+
+// Extra Life
+
+class ExtraLifeGoodie : public Goodie
+{
+public:
+    ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+
+// Restore Health
+
+class RestoreHealthGoodie : public Goodie
+{
+public:
+    RestoreHealthGoodie(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+};
+
+
+// Crystal
+
+class Crystal : public Goodie
+{
+public:
+    Crystal(StudentWorld* sp, double startX, double startY);
+    virtual void GiveSpecificBenefit();
+    virtual bool isStealableGoodie() const;
+};
+
+inline bool Crystal::isStealableGoodie() const
+{
+    return false;
+}
+
+// Pit
+
+class Pit : public Actor
+{
+public:
+    Pit(StudentWorld* sp, double startX, double startY);
+    virtual int doSomethingSpecific();
+};
+
 
 // KillableActor
 
@@ -192,7 +297,6 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
     
         virtual void PlayAttackedSound() const = 0;
         virtual void PlayFireSound() const = 0;
-        
 };
 
 // Player
@@ -295,7 +399,7 @@ public:
     void SetTravelled(int amt);
     void SetToTurn(int amt);
     
-    int GetStolenGoodieType() const;
+    virtual Actor* StolenGoodie() const;
     
     virtual void getAttacked();
     
@@ -307,15 +411,16 @@ private:
     int m_dTravelled;
     int m_dToTurn;
     int dirs[4];
-    int m_StolenGoodie;
+    Actor* m_stolenGoodie;
     
     void ShuffleDirs();
 };
 
-inline int ThiefBot::GetStolenGoodieType() const
+inline Actor* ThiefBot::StolenGoodie() const
 {
-    return m_StolenGoodie;
+    return m_stolenGoodie;
 }
+
 
 inline int ThiefBot::GetTravelled() const
 {

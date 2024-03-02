@@ -110,7 +110,7 @@ int StudentWorld::init()
         }
     }
     
-    
+    AddActor(new MeanThiefBot(this, 13, 2));     //ERASE ME
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -263,7 +263,7 @@ bool StudentWorld::CanWalk(Actor* a) const
     }
 }
 
-int StudentWorld::GoodieHere(double x, double y) const
+Actor* StudentWorld::GoodieHere(double x, double y)
 {
     int col, row;
     ConvertCoords(x, y, row, col);
@@ -271,19 +271,22 @@ int StudentWorld::GoodieHere(double x, double y) const
     {
         for(int i = 0; i < m_Actors.size(); i++)
         {
-            if(AreEqual(x, m_Actors[i]->getX()) && AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->GoodieType() != NOT_GOODIE)
+            if( AreEqual(x, m_Actors[i]->getX()) &&
+                AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isStealableGoodie() )
             {
-                int goodieType = NOT_GOODIE;
+                Actor* stolen = nullptr;
                 if(randInt(1, 10) == 1)     // 10% probability
                 {
-                    goodieType = m_Actors[i]->GoodieType();
-                    m_Actors[i]->Die();
+                    stolen = m_Actors[i];
+                    LeaveSquare(m_Actors[i]);
+                    m_Actors[i]->SetPos(-1, -1);    // move offscreen (fix me)
+                    m_Actors.erase(m_Actors.begin()+i); // remove this goodie from Actors vector so it will not be part of the game
                 }
-                return goodieType;
+                return stolen;
             }
         }
     }
-    return NOT_GOODIE;
+    return nullptr;
 }
 
 
@@ -397,25 +400,12 @@ void StudentWorld::FireFrom(Actor* a)
 
 void StudentWorld::HandleThiefBotDeath(ThiefBot* t)
 {
-    int goodieType = t->GetStolenGoodieType();
-    if(goodieType == NOT_GOODIE)
+    Actor* stolen = t->StolenGoodie();
+    if(stolen == nullptr)
         return;
     else{
-        double x = t->getX();
-        double y = t->getY();
-        
-        switch(goodieType)
-        {
-            case C_AMMO:
-                AddActor(new AmmoGoodie(this, x, y));
-                break;
-            case C_EXTRA_LIFE:
-                AddActor(new ExtraLifeGoodie(this, x, y));
-                break;
-            case C_RESTORE_HEALTH:
-                AddActor(new RestoreHealthGoodie(this, x, y));
-                break;
-        }
+        stolen->SetPos(t->getX(), t->getY());
+        AddActor(stolen);   // bring stolen goodie back to the game
     }
 }
 

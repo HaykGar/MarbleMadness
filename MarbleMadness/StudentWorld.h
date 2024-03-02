@@ -31,7 +31,7 @@ public:
     
     void DecCrystals();
     bool CrystalsLeft() const;
-    int GoodieHere(double x, double y) const;
+    Actor* GoodieHere(double x, double y);
     bool SamePosAsPlayer(Actor* a) const;
     bool PlayerInLOS(Actor* a) const;
     

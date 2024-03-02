@@ -40,6 +40,41 @@ void Actor::MoveOne()
     GetWorld()->OccupySquare(this);
 }
 
+void Actor::SetPos(double x, double y)  // used in reintegrating stolen goodies
+{
+    if( !(AreEqual(x, getX()) && AreEqual(y, getY())) )
+    {
+        int initialDir = getDirection();
+        if(getX() < x)
+        {
+            setDirection(right);
+            while(!AreEqual(x, getX()))
+                moveForward();
+        }
+        else if(getX() > x)
+        {
+            setDirection(left);
+            while(!AreEqual(x, getX()))
+                moveForward();
+        }
+        
+        if(getY() < y)
+        {
+            setDirection(up);
+            while(!AreEqual(y, getY()))
+                moveForward();
+        }
+        else if(getY() > y)
+        {
+            setDirection(down);
+            while(!AreEqual(y, getY()))
+                moveForward();
+        }
+        
+        setDirection(initialDir);
+    }
+}
+
 // KillableActor Implementations:
 
 KillableActor::KillableActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : Actor(sp, imageID, startX, startY, ocStat, dir, xp), m_health(health) {}
@@ -282,7 +317,7 @@ void RageBot::SpecialRobotAction()
 
 // ThiefBot Implementations:
 
-ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp) : Robot(health, sp, imageID, startX, startY, right, xp), m_dTravelled(0), m_StolenGoodie(NOT_GOODIE)
+ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, int imageID, int xp) : Robot(health, sp, imageID, startX, startY, right, xp), m_dTravelled(0), m_stolenGoodie(nullptr)
 {
     m_dToTurn = randInt(1, 6);
     dirs[0] = left;
@@ -299,12 +334,12 @@ void ThiefBot::ShuffleDirs()
 
 bool ThiefBot::StealGoodie()
 {
-    if(m_StolenGoodie == NOT_GOODIE)
+    if(m_stolenGoodie == nullptr)
     {
-        int goodieFound = GetWorld()->GoodieHere(getX(), getY());   // try to pick up a goodie
-        if(goodieFound != NOT_GOODIE)   // picked up a goodie
+        Actor* goodieFound = GetWorld()->GoodieHere(getX(), getY());   // try to pick up a goodie
+        if(goodieFound != nullptr)   // picked up a goodie
         {
-            m_StolenGoodie = goodieFound;
+            m_stolenGoodie = goodieFound;
             GetWorld()->playSound(SOUND_ROBOT_MUNCH);
             return true;
         }
