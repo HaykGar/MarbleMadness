@@ -11,6 +11,7 @@ const int START_PLAYER_HEALTH = 20;
 const int MARBLE_HP_START = 10;
 const int RAGEBOT_HP_START = 10;
 const int REG_THIEFBOT_HP_START = 5;
+const int MEAN_THIEFBOT_HP_START = 8;
 
 const int PLAYER_START_PEAS = 20;
 const int PEA_DAMAGE = 2;
@@ -22,6 +23,8 @@ const int EXTRA_LIFE_XP = 1000;
 const int RESTORE_HEALTH_XP = 500;
 const int CRYSTAL_XP = 50;
 const int RAGEBOT_XP = 100;
+const int REG_THIEFBOT_XP = 10;
+const int MEAN_THIEFBOT_XP = 20;
 
 enum GoodieTypes
 {
@@ -295,6 +298,9 @@ public:
     int GetStolenGoodieType() const;
     
     virtual void getAttacked();
+    
+    bool StealGoodie();
+    void ChangeDirection();
     virtual void SpecialRobotAction();
 
 private:
@@ -329,6 +335,14 @@ inline void ThiefBot::SetToTurn(int amt)
 }
 
 
+// Mean ThiefBot:
+
+class MeanThiefBot : public ThiefBot
+{
+public:
+    MeanThiefBot(StudentWorld* sp, double startX, double startY);
+    virtual void SpecialRobotAction();
+};
 
 
 

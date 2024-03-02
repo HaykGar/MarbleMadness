@@ -273,13 +273,11 @@ RageBot::RageBot(StudentWorld* sp, double startX, double startY, int dir) : Robo
 
 void RageBot::SpecialRobotAction()
 {
-    if(ShootPlayer())
-        return;
-    if(!Move())
+    if(!ShootPlayer() && !Move())
     {
         m_dirIndex = !m_dirIndex;
-        ResetDirection();       // change dir to opposite direction
-    }
+        ResetDirection();
+    }   // changed dir to opposite direction
 }
 
 // ThiefBot Implementations:
@@ -295,42 +293,51 @@ ThiefBot::ThiefBot(int health, StudentWorld* sp, double startX, double startY, i
 
 void ThiefBot::ShuffleDirs()
 {
+    for(int i = 0; i < 4; i++)  // array holds 4 directions
+        std::swap(dirs[i], dirs[randInt(i, 3)]);
+}
+
+bool ThiefBot::StealGoodie()
+{
+    if(m_StolenGoodie == NOT_GOODIE)
+    {
+        int goodieFound = GetWorld()->GoodieHere(getX(), getY());   // try to pick up a goodie
+        if(goodieFound != NOT_GOODIE)   // picked up a goodie
+        {
+            m_StolenGoodie = goodieFound;
+            GetWorld()->playSound(SOUND_ROBOT_MUNCH);
+            return true;
+        }
+    }
+    return false;
+}
+
+void ThiefBot::ChangeDirection()
+{
+    m_dToTurn = randInt(1, 6);
+    m_dTravelled = 0;
+    
+    int prevDir = getDirection();
+    ShuffleDirs();
     for(int i = 0; i < 4; i++)
     {
-        std::swap(dirs[i], dirs[randInt(i, 3)]);
+        setDirection(dirs[i]);
+        if(Move())
+        {
+            m_dTravelled++;
+            return;
+        }
     }
+    setDirection(prevDir);  // could not move in any direction
 }
 
 void ThiefBot::SpecialRobotAction()
 {
-    if(m_StolenGoodie == NOT_GOODIE)
-    {
-        int goodieFound = GetWorld()->GoodieHere(getX(), getY());
-        if(goodieFound != NOT_GOODIE)
-        {
-            m_StolenGoodie = goodieFound;
-            GetWorld()->playSound(SOUND_ROBOT_MUNCH);
-            return;
-        }
-    }
+    if(StealGoodie())
+        return;
+    
     if( !(m_dTravelled < m_dToTurn && Move()) ) // failed to move
-    {
-        m_dToTurn = randInt(1, 6);
-        m_dTravelled = 0;
-        
-        int prevDir = getDirection();
-        ShuffleDirs();
-        for(int i = 0; i < 4; i++)
-        {
-            setDirection(dirs[i]);
-            if(Move())
-            {
-                m_dTravelled++;
-                return;
-            }
-        }
-        setDirection(prevDir);  // could not move in any direction
-    }
+        ChangeDirection();
     else
         m_dTravelled++;
 }
@@ -340,6 +347,17 @@ void ThiefBot::getAttacked()
     SentientActor::getAttacked();
     if(isDead())
         GetWorld()->HandleThiefBotDeath(this);
+}
+
+// MeanThiefBot Implementations
+
+MeanThiefBot::MeanThiefBot(StudentWorld* sp, double startX, double startY) : ThiefBot(MEAN_THIEFBOT_HP_START, sp, startX, startY, IID_MEAN_THIEFBOT, MEAN_THIEFBOT_XP)
+{}
+
+void MeanThiefBot::SpecialRobotAction()
+{
+    if(!ShootPlayer())
+        ThiefBot::SpecialRobotAction();
 }
 
 // Wall Implementations:
