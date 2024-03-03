@@ -52,7 +52,7 @@ public:
     bool PushMarble(Marble* m, int dir);
     bool PlayerTryToPush();
     bool SquareAttackable(double x, double y) const;
-    bool HasSuchOccupant(double x, double y, int status) const;
+    bool HasOccupantWithStatus(double x, double y, int status) const;
 
 private:
     std::vector<Actor*> m_Actors;
@@ -80,7 +80,7 @@ private:
         bool SquareWalkable(int col, int row) const;
         int SquarePossiblyPushable(int col, int row) const;
         bool SquareAttackable(int col, int row) const;
-        bool HasSuchOccupant(int col, int row, int status) const;
+        bool HasOccupantWithStatus(int col, int row, int status) const;
         std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
         /*
          empty list at a position means that square is empty, otherwise status code of objects in lists tell about walk/push/shoot-ability
@@ -93,7 +93,7 @@ private:
     void RemoveDead();
     void UpdateGameText();
     
-    bool PathToPlayer(double x, double y, std::function<void(double&, double&)> ) const;
+    bool PathToPlayer(double x, double y, std::function<void(double&, double&)>, int depth ) const;
 };
 
 inline void StudentWorld::DecCrystals(Crystal* c)

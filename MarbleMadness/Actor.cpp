@@ -108,7 +108,7 @@ Marble::Marble(StudentWorld* sp, double startX, double startY) : KillableActor(M
 {}
 
 
-bool Marble::Push(int dir)   // make void?
+bool Marble::Push(int dir)
 {
     return GetWorld()->PushMarble(this, dir);
 }
@@ -405,7 +405,7 @@ void Factory::ManufactureActor() const
 
 int Factory::doSomethingSpecific()
 {
-    if(!( GetWorld()->ThreeThievesWithin3(getX(), getY()) || GetWorld()->HasSuchOccupant(getX(), getY(), OC_KILLABLE_SHOTSTOP) ))   // Only thiefbots can be on the same square as the factory
+    if(!( GetWorld()->ThreeThievesWithin3(getX(), getY()) || GetWorld()->HasOccupantWithStatus(getX(), getY(), OC_KILLABLE_SHOTSTOP) ))   // Only thiefbots can be on the same square as the factory
         if (randInt(1, 50) == 10)
             ManufactureActor();
     

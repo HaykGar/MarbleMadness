@@ -14,6 +14,24 @@ GameWorld* createStudentWorld(string assetPath)
 
 // Students:  Add code to this file, StudentWorld.h, Actor.h, and Actor.cpp
 
+std::function<void(double&, double&)> modifyParamFunction(int dir)
+{
+    switch (dir)
+    {
+        case Actor::left:
+            return [&](double& x, double& y) -> void { x--; };
+        case Actor::right:
+            return [&](double& x, double& y) -> void { x++; };
+        case Actor::up:
+            return  [&](double& x, double& y) -> void { y++; };
+        case Actor::down:
+            return [&](double& x, double& y) -> void { y--; };
+        default:
+            std::cerr << "Error, invalid direction, cannot create appropriate function\n";  // maybe exception better?
+            return [&](double& x, double& y) -> void { };
+    }
+}
+
 StudentWorld::StudentWorld(string assetPath)
 : GameWorld(assetPath), m_player(nullptr), m_nCrystals(0), m_Bonus(0), m_grid()
 {}
@@ -209,31 +227,12 @@ void StudentWorld::UpdateGameText() // inefficient, fix later
 
 bool StudentWorld::PlayerTryToPush()
 {
-    double x, y;
-    switch (m_player->getDirection())
-    {
-        case Actor::right:
-            x = m_player->getX() + 1;
-            y = m_player->getY();
-            break;
-        case Actor::left:
-            x = m_player->getX() - 1;
-            y = m_player->getY();
-            break;
-        case Actor::up:
-            x = m_player->getX();
-            y = m_player->getY() + 1;
-            break;
-        case Actor::down:
-            x = m_player->getX();
-            y = m_player->getY() - 1;
-            break;
-        default:
-            std::cerr << "Player has invalid direction\n";
-            return false;
-    }
+    double x = m_player->getX();
+    double y = m_player->getY();
+    std::function<void(double&, double&)> modifyParams = modifyParamFunction(m_player->getDirection());
+    modifyParams(x, y);
     
-    for(int i = 0; i < m_Actors.size(); i++)
+    for(long int i = m_Actors.size() - 1; i >= 0 ; i--)
     {
         if(m_Actors[i]->Pushable() && AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) )
             return m_Actors[i]->Push(m_player->getDirection());
@@ -251,29 +250,17 @@ bool StudentWorld::CanWalk(Actor* a) const
 {
     double x = a->getX();
     double y = a->getY();
-    int dir = a->getDirection();
+    std::function<void(double&, double&)> modifyParams = modifyParamFunction(a->getDirection());
+    modifyParams(x, y);
     
-    switch(dir)
-    {
-        case Actor::up:
-            return SquareWalkable(x, y+1);
-        case Actor::down:
-            return SquareWalkable(x, y-1);
-        case Actor::right:
-            return SquareWalkable(x+1, y);
-        case Actor::left:
-            return SquareWalkable(x-1, y);
-        default:
-            std::cerr << "walking error, invalid direction\n";
-            return false;
-    }
+    return SquareWalkable(x, y);
 }
 
 Actor* StudentWorld::GetGoodieHere(double x, double y)
 {
-    if(HasSuchOccupant(x, y, Actor::OC_NON_BARRIER))    // goodie or crystal
+    if(HasOccupantWithStatus(x, y, Actor::OC_NON_BARRIER))    // goodie or crystal
     {
-        for(int i = 0; i < m_Actors.size(); i++)
+        for(long int i = m_Actors.size() - 1; i >= 0 ; i--)
         {
             if( AreEqual(x, m_Actors[i]->getX()) &&
                 AreEqual(m_Actors[i]->getY(), y) && m_Actors[i]->isStealableGoodie() )
@@ -295,49 +282,32 @@ Actor* StudentWorld::GetGoodieHere(double x, double y)
 }
 
 
-bool StudentWorld::PlayerInLOS(Actor *a) const  // set max depth to guard against infinite recursion?
+bool StudentWorld::PlayerInLOS(Actor *a) const
 {
     if(a == nullptr)
     {
         std::cerr << "Error, nullptr passed to PlayerInLOS\n";
         return false;
     }
-    // Helper lambda function to avoid redundant dir check
-    std::function<void(double&, double&)> modifyParams;
-    switch (a->getDirection()) {
-        case Actor::left:
-            modifyParams = [&](double& x, double& y) -> void
-            { x--; };
-            break;
-        case Actor::right:
-            modifyParams = [&](double& x, double& y) -> void
-            { x++; };
-            break;
-        case Actor::up:
-            modifyParams = [&](double& x, double& y) -> void
-            { y++; };
-            break;
-        case Actor::down:
-            modifyParams = [&](double& x, double& y) -> void
-            { y--; };
-            break;
-        default:
-            std::cerr << "Error, invalid direction\n";
-            return false;
-    }
-    
-    return PathToPlayer(a->getX(), a->getY(), modifyParams);
+    // Helper function to avoid redundant dir check
+    std::function<void(double&, double&)> modifyParams = modifyParamFunction(a->getDirection());
+    return PathToPlayer(a->getX(), a->getY(), modifyParams, 0);
 }
 
-bool StudentWorld::PathToPlayer(double x, double y, std::function<void(double&, double&)> modifyParams) const
+bool StudentWorld::PathToPlayer(double x, double y, std::function<void(double&, double&)> modifyParams, int depth) const
 {
     modifyParams(x, y);
+    depth++;
+    if(depth > std::max(VIEW_WIDTH, VIEW_HEIGHT)){
+        std::cerr << "terminated recursion, depth limit reached\n";
+        return false;
+    }
     if (AreEqual(m_player->getX(), x) && AreEqual(m_player->getY(), y))
         return true;
     else if (SquareAttackable(x, y))
         return false;
     else
-        return PathToPlayer(x, y, modifyParams);
+        return PathToPlayer(x, y, modifyParams, depth);
 }
 
 
@@ -353,9 +323,9 @@ bool StudentWorld::AttackSquare(double x, double y)
         return true;
     }
     bool hitSomething = false;
-    for(int i = 0; i < m_Actors.size(); i++)
+    for(long int i = m_Actors.size() - 1; i >= 0 ; i--)
     {
-        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > Actor::OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < Actor::END_NOT_A_STATUS) /* <-- shotstopper */)    // account for factories
+        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() > Actor::OC_BARRIER_NON_SHOTSTOP && m_Actors[i]->GetOcStatus() < Actor::END_NOT_A_STATUS) /* <-- shotstopper */)
         {
             if(m_Actors[i]->GetOcStatus() == Actor::OC_UNKILLABLE_SHOTSTOP)
                 hitSomething = true;
@@ -375,28 +345,9 @@ void StudentWorld::FireFrom(Actor* a)
     double x = a->getX();
     double y = a->getY();
     int dir = a->getDirection();
-    
-    Pea* pea = nullptr;
-    switch(dir)
-    {
-        case Actor::left:
-            pea = new Pea(this, x-1, y, dir);
-            break;
-        case Actor::right:
-            pea = new Pea(this, x+1, y, dir);
-            break;
-        case Actor::up:
-            pea = new Pea(this, x, y+1, dir);
-            break;
-        case Actor::down:
-            pea = new Pea(this, x, y-1, dir);
-            break;
-        default:
-            std::cerr << "invalid direction for new pea\n";
-            return;
-    }
-    
-    AddActor(pea);  // never add nullptr
+    std::function<void(double&, double&)> modifyParams = modifyParamFunction(dir);
+    modifyParams(x, y);
+    AddActor(new Pea(this, x, y, dir));
 }
 
 
@@ -424,7 +375,7 @@ bool StudentWorld::ThreeThievesWithin3(double x, double y) const
         {
             for(int j = y - 3; j <= y + 3; j++)
             {
-                if(j >= 0 && j < VIEW_HEIGHT && HasSuchOccupant(i, j, Actor::OC_KILLABLE_SHOTSTOP))
+                if(j >= 0 && j < VIEW_HEIGHT && HasOccupantWithStatus(i, j, Actor::OC_KILLABLE_SHOTSTOP))
                 {
                     possibleThieves++;
                     possiblePos.push_back(Coord(i, j));
@@ -489,30 +440,12 @@ bool StudentWorld::SquareWalkable(double x, double y) const
 bool StudentWorld::PushMarble(Marble* m, int dir)
 {
     int row, col;
-    double x, y;
-    switch (dir)  // repetitive, write function! fix me
-    {
-        case Actor::right:
-            x = m->getX() + 1;
-            y = m->getY();
-            break;
-        case Actor::left:
-            x = m->getX() - 1;
-            y = m->getY();
-            break;
-        case Actor::up:
-            x = m->getX();
-            y = m->getY() + 1;
-            break;
-        case Actor::down:
-            x = m->getX();
-            y = m->getY() - 1;
-            break;
-        default:
-            std::cerr << "invalid push direction\n";
-            return false;
-    }
-    ConvertCoords(x, y, row, col);
+    double x = m->getX();
+    double y = m->getY();
+    std::function<void(double&, double&)> modifyParams = modifyParamFunction(dir);
+    modifyParams(x, y);
+    
+    ConvertCoords(x, y, row, col);  // repetitive
     int pushability = m_grid.SquarePossiblyPushable(col, row);
     
     
@@ -547,11 +480,11 @@ bool StudentWorld::SquareAttackable(double x, double y) const
     return m_grid.SquareAttackable(col, row);
 }
 
-bool StudentWorld::HasSuchOccupant(double x, double y, int status) const
+bool StudentWorld::HasOccupantWithStatus(double x, double y, int status) const
 {
     int row, col;
     ConvertCoords(x, y, row, col);
-    return m_grid.HasSuchOccupant(col, row, status);
+    return m_grid.HasOccupantWithStatus(col, row, status);
 }
 
 // GameMap struct implementations
@@ -681,7 +614,7 @@ bool StudentWorld::GameMap::SquareAttackable(int col, int row) const
     return false;
 }
 
-bool StudentWorld::GameMap::HasSuchOccupant(int col, int row, int status) const
+bool StudentWorld::GameMap::HasOccupantWithStatus(int col, int row, int status) const
 {
     if(InvalidCoords(col, row) || InvalidStatus(status))
         return false;
