@@ -14,9 +14,19 @@ bool AreEqual(double d1, double d2)
 Actor::Actor(StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp) : GraphObject(imageID, startX, startY, dir), m_world(sp), m_isDead(false), m_occupancyStatus(ocStat), m_XPVal(xp)
 {}
 
+bool Actor::Push(int dir)
+{
+    return false;
+}
+
 Actor* Actor::StolenGoodie() const
 {
     return nullptr;
+}
+
+bool Actor::CanPushInto() const
+{
+    return false;
 }
 
 int Actor::doSomething()
@@ -97,44 +107,12 @@ void KillableActor::getAttacked()
 Marble::Marble(StudentWorld* sp, double startX, double startY) : KillableActor(MARBLE_HP_START, sp, IID_MARBLE, startX, startY, OC_KILLABLE_SHOTSTOP, none, 0)
 {}
 
-void Marble::MarbleMove(int dir)    // find nicer way?
+
+bool Marble::Push(int dir)   // make void?
 {
-    if(dir != left && dir != right && dir != up && dir != down){
-        std::cerr << "invalid direction for marble movement\n";
-        return;
-    }
-    setDirection(dir);
-    MoveOne();
-    setDirection(none);
+    return GetWorld()->PushMarble(this, dir);
 }
 
-bool Marble::Push(int dir)
-{
-    double x = getX();
-    double y = getY();
-    
-    switch(dir)
-    {
-        case left:
-            x--;
-            break;
-        case right:
-            x++;
-            break;
-        case up:
-            y++;
-            break;
-        case down:
-            y--;
-            break;
-    }
-    if(!GetWorld()->SquarePushable(x, y))
-        return false;
-    else{
-        MarbleMove(dir);
-        return true;
-    }
-}
 
 
 // SentientActor Implementations:
@@ -187,7 +165,7 @@ void Player::PlayerFire()
 
 bool Player::WalkCondition()
 {
-    return SentientActor::WalkCondition() || GetWorld()->TryToPush();
+    return SentientActor::WalkCondition() || GetWorld()->PlayerTryToPush();
 }
 
 int Player::doSomethingSpecific()
@@ -548,9 +526,5 @@ Pit::Pit(StudentWorld* sp, double startX, double startY) : Actor(sp, IID_PIT, st
 
 int Pit::doSomethingSpecific()
 {
-    if(GetWorld()->MarbleWithPit(this)){
-        HandleDeath();
-    }
-    
     return GWSTATUS_CONTINUE_GAME;
 }

@@ -209,7 +209,7 @@ void StudentWorld::UpdateGameText() // inefficient, fix later
     setGameStatText(text.str());
 }
 
-bool StudentWorld::TryToPush()
+bool StudentWorld::PlayerTryToPush()
 {
     double x, y;
     switch (m_player->getDirection())
@@ -342,14 +342,6 @@ bool StudentWorld::PathToPlayer(double x, double y, std::function<void(double&, 
         return PathToPlayer(x, y, modifyParams);
 }
 
-void StudentWorld::SwallowMarble(double x, double y)
-{
-    for(int i = 0; i < m_Actors.size(); i++)
-    {
-        if(AreEqual(m_Actors[i]->getX(), x) && AreEqual(m_Actors[i]->getY(), y) && (m_Actors[i]->GetOcStatus() == Actor::OC_KILLABLE_SHOTSTOP) )
-            m_Actors[i]->HandleDeath();
-    }
-}
 
 bool StudentWorld::AttackSquare(double x, double y)
 {
@@ -496,24 +488,57 @@ bool StudentWorld::SquareWalkable(double x, double y) const
     return m_grid.SquareWalkable(col, row);
 }
 
-bool StudentWorld::SquarePushable(double x, double y) const
+bool StudentWorld::PushMarble(Marble* m, int dir)
 {
     int row, col;
-    ConvertCoords(x, y, row, col);
-    return m_grid.SquarePushable(col, row);
-}
-
-bool StudentWorld::MarbleWithPit(Pit* p)
-{
-    int row, col;
-    ConvertCoords(p->getX(), p->getY(), row, col);
-    if(m_grid.MarbleWithPit(col, row))
+    double x, y;
+    switch (dir)  // repetitive, write function! fix me
     {
-        SwallowMarble(p->getX(), p->getY());
-        return true;
+        case Actor::right:
+            x = m->getX() + 1;
+            y = m->getY();
+            break;
+        case Actor::left:
+            x = m->getX() - 1;
+            y = m->getY();
+            break;
+        case Actor::up:
+            x = m->getX();
+            y = m->getY() + 1;
+            break;
+        case Actor::down:
+            x = m->getX();
+            y = m->getY() - 1;
+            break;
+        default:
+            std::cerr << "invalid push direction\n";
+            return false;
     }
-    else
+    ConvertCoords(x, y, row, col);
+    int pushability = m_grid.SquarePossiblyPushable(col, row);
+    
+    
+    if( pushability == -1)
         return false;
+    else if(pushability != 0)   // square not empty
+    {
+        for(long int i = m_Actors.size() - 1; i >= 0; i--)
+        {
+            if( m_Actors[i]->CanPushInto() && AreEqual(x, m_Actors[i]->getX()) && AreEqual(y, m_Actors[i]->getY()) )
+            {
+                m_Actors[i]->HandleDeath(); // pit disappears
+                m->HandleDeath();           // marble dissapears
+                return true;
+            }
+        }
+        std::cerr << "error, expected to find pit\n";
+        return false;
+    }
+    
+    m->setDirection(dir);
+    m->MoveOne();
+    m->setDirection(Actor::none);
+    return true;    // empty square, so marble moves
 }
 
 
@@ -607,48 +632,24 @@ void StudentWorld::GameMap::OccupySquare(int col, int row, int status)
     m_occupancyMap[row][col]->push_back(status);
 }
 
-bool StudentWorld::GameMap::SquarePushable(int col, int row) const
+int StudentWorld::GameMap::SquarePossiblyPushable(int col, int row) const
 {
     if ( InvalidCoords(col, row) )
     {
         std::cerr << "Error pushing, invalid coordinates\n";
-        return false;
+        return -1;
     }
     
     std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
     if (i == m_occupancyMap[row][col]->end())   //empty
-        return true;
+        return 0;   // definitely pushable
     
     for(; i != m_occupancyMap[row][col]->end(); i++)
     {
-        if(*i == Actor::OC_BARRIER_NON_SHOTSTOP)    // pit
-            return true;
+        if(*i != Actor::OC_BARRIER_NON_SHOTSTOP)    // pit
+            return -1;
     }
-    return false;
-}
-
-bool StudentWorld::GameMap::MarbleWithPit(int col, int row) const
-{
-    
-    if ( InvalidCoords(col, row) )
-    {
-        std::cerr << "Error, invalid coordinates\n";
-        return false;
-    }
-    
-    std::list<int>::iterator i = m_occupancyMap[row][col]->begin();
-    if (i == m_occupancyMap[row][col]->end())
-    {
-        std::cerr << "invalid function call, no pit at this location\n";
-        return false;
-    }
-    
-    for(; i != m_occupancyMap[row][col]->end(); i++)
-    {
-        if(*i == Actor::OC_KILLABLE_SHOTSTOP)
-            return true; // marble only killable actor allowed to share spot with pit
-    }
-    return false;
+    return 1;   // might be pushable
 }
 
 bool StudentWorld::GameMap::SquareWalkable(int col, int row) const

@@ -34,6 +34,7 @@ bool AreEqual(double d1, double d2);
 
 
 class StudentWorld;
+class Marble;
 
 // Actor
 
@@ -45,7 +46,6 @@ class Actor : public GraphObject
         
         void SetPos(double x, double y);
         int doSomething();  // make void, use bool member variable in student world to keep track of game ending
-        virtual int doSomethingSpecific() = 0;
         virtual void getAttacked() {}
         void MoveOne();
             
@@ -54,11 +54,11 @@ class Actor : public GraphObject
         virtual int GetXPValue() const;
         bool isDead() const;
         void Die();
-        virtual void HandleDeath();
-        virtual void PlayDeadSound() const {}
+        void HandleDeath();
     
         virtual bool Pushable() const;
-        virtual bool Push(int dir = none);
+        virtual bool Push(int dir);
+        virtual bool CanPushInto() const;
     
         virtual bool isStealableGoodie() const;
         virtual bool isThief() const;
@@ -69,7 +69,8 @@ class Actor : public GraphObject
         {
             OC_ERROR = -1,
             OC_NON_BARRIER,             // goodies, exit, peas
-            OC_BARRIER_NON_SHOTSTOP,    // pit (can push into)
+            OC_BARRIER_NON_SHOTSTOP,    // pit (can push into),
+            // shot stoppers:
             OC_KILLABLE_SHOTSTOP,       // marbles, player, robots
             OC_UNKILLABLE_SHOTSTOP,     // walls and factories
             END_NOT_A_STATUS            // end of enum, not a valid status
@@ -80,6 +81,10 @@ class Actor : public GraphObject
         bool m_isDead;
         int m_occupancyStatus;
         int m_XPVal;
+    
+        virtual int doSomethingSpecific() = 0;
+        virtual void PlayDeadSound() const {}
+
 };
 
 
@@ -124,10 +129,7 @@ inline bool Actor::Pushable() const
     return false;
 }
 
-inline bool Actor::Push(int dir)
-{
-    return false;
-}
+
 
 // Wall
 
@@ -136,6 +138,7 @@ class Wall : public Actor
 public:
     Wall(StudentWorld* sp, double startX, double startY);
     
+private:
     virtual int doSomethingSpecific();
 };
 
@@ -151,6 +154,7 @@ class Pea : public Actor
 public:
     Pea(StudentWorld* sp, double startX, double startY, int dir);
     
+private:
     virtual int doSomethingSpecific();
 };
 
@@ -161,9 +165,9 @@ class Exit : public Actor
     public:
     
     Exit(StudentWorld* sp, double startX, double startY);
-    
-    virtual int doSomethingSpecific();
     virtual void PlayDeadSound() const;
+private:
+    virtual int doSomethingSpecific();
 };
 
 // Goodie
@@ -173,11 +177,12 @@ class Goodie : public Actor
 public:
     Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
     virtual ~Goodie() {}
-    
-    virtual void GiveSpecificBenefit() = 0;
-    virtual int doSomethingSpecific();
     virtual void PlayDeadSound() const;
     virtual bool isStealableGoodie() const;
+    
+private:
+    virtual void GiveSpecificBenefit() = 0;
+    virtual int doSomethingSpecific();
 };
 
 inline bool Goodie::isStealableGoodie() const
@@ -191,6 +196,7 @@ class AmmoGoodie : public Goodie
 {
 public:
     AmmoGoodie(StudentWorld* sp, double startX, double startY);
+private:
     virtual void GiveSpecificBenefit();
 };
 
@@ -201,6 +207,7 @@ class ExtraLifeGoodie : public Goodie
 {
 public:
     ExtraLifeGoodie(StudentWorld* sp, double startX, double startY);
+private:
     virtual void GiveSpecificBenefit();
 };
 
@@ -211,6 +218,7 @@ class RestoreHealthGoodie : public Goodie
 {
 public:
     RestoreHealthGoodie(StudentWorld* sp, double startX, double startY);
+private:
     virtual void GiveSpecificBenefit();
 };
 
@@ -220,8 +228,9 @@ class Crystal : public Goodie
 {
 public:
     Crystal(StudentWorld* sp, double startX, double startY);
-    virtual void GiveSpecificBenefit();
     virtual bool isStealableGoodie() const;
+private:
+    virtual void GiveSpecificBenefit();
 };
 
 inline bool Crystal::isStealableGoodie() const
@@ -235,8 +244,15 @@ class Pit : public Actor
 {
 public:
     Pit(StudentWorld* sp, double startX, double startY);
+    virtual bool CanPushInto() const;
+private:
     virtual int doSomethingSpecific();
 };
+
+inline bool Pit::CanPushInto() const // use function instead of Oc stat
+{
+    return true;
+}
 
 
 // KillableActor
@@ -273,11 +289,10 @@ class Marble : public KillableActor
 {
 public:
     Marble(StudentWorld* sp, double startX, double startY);
-    virtual int doSomethingSpecific();
     virtual bool Pushable() const;
     virtual bool Push(int dir);
 private:
-    void MarbleMove(int dir);
+    virtual int doSomethingSpecific();
 };
 
 inline bool Marble::Pushable() const
@@ -301,9 +316,9 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
         void Attack();          
         bool Move();
         virtual bool WalkCondition();
-
         virtual void getAttacked();
     
+    private:
         virtual void PlayAttackedSound() const = 0;
         virtual void PlayFireSound() const = 0;
 };
@@ -315,10 +330,7 @@ class Player : public SentientActor     // Handle Player Death
 public:
     Player(StudentWorld* sp, double startX, double startY);
     
-    virtual int doSomethingSpecific();
-    virtual void PlayAttackedSound () const;
     virtual void PlayDeadSound() const;
-    virtual void PlayFireSound() const;
     void AddPeas(int amount);
     void DecPeas();
     int GetCurrentAmmo() const;
@@ -328,6 +340,10 @@ public:
     
 private:
     int m_nPeas;
+    virtual int doSomethingSpecific();
+    virtual void PlayAttackedSound () const;
+    virtual void PlayFireSound() const;
+
 };
 
 inline void Player::DecPeas()
@@ -356,18 +372,19 @@ public:
     const int MIN_TICKS_PER_ACTION = 3;
     
     bool NeedsToRest() const;
-    virtual int doSomethingSpecific();
-    virtual void SpecialRobotAction() = 0;
-    
     bool ShootPlayer();
     
     virtual void PlayDeadSound() const;
-    virtual void PlayAttackedSound() const;
-    virtual void PlayFireSound() const;
+    
     
 private:
     unsigned int m_ticksWaited;
     int m_ticksPerAction;
+    
+    virtual void PlayAttackedSound() const;
+    virtual void PlayFireSound() const;
+    virtual int doSomethingSpecific();
+    virtual void SpecialRobotAction() = 0;
 };
 
 inline
@@ -382,12 +399,12 @@ class RageBot : public Robot
 {
 public:
     RageBot(StudentWorld* sp, double startX, double startY, int dir);
-    virtual void SpecialRobotAction();
-    void ResetDirection();
     
 private:
     bool m_dirIndex;
     int m_dirs[2];
+    virtual void SpecialRobotAction();
+    void ResetDirection();  // get rid of function
 };
 
 inline void RageBot::ResetDirection()
@@ -426,6 +443,7 @@ private:
     Actor* m_stolenGoodie;
     
     void ShuffleDirs();
+    
 };
 
 inline bool ThiefBot::isThief() const
@@ -458,6 +476,7 @@ class MeanThiefBot : public ThiefBot
 {
 public:
     MeanThiefBot(StudentWorld* sp, double startX, double startY);
+private:
     virtual void SpecialRobotAction();
 };
 
@@ -467,10 +486,10 @@ class Factory : public Actor
 {
 public:
     Factory(StudentWorld* sp, double startX, double startY);
-    virtual int doSomethingSpecific();
-    void ManufactureActor() const;
 private:
     virtual Actor* NewActor() const = 0;
+    virtual int doSomethingSpecific();
+    void ManufactureActor() const;
 };
 
 // RegFactory
@@ -478,7 +497,9 @@ private:
 class RegFactory : public Factory
 {
 public:
-    RegFactory(StudentWorld* sp, double startX, double startY) : Factory(sp, startX, startY) {}    virtual Actor* NewActor() const;
+    RegFactory(StudentWorld* sp, double startX, double startY) : Factory(sp, startX, startY) {}    
+private:
+    virtual Actor* NewActor() const;
 };
 
 inline Actor* RegFactory::NewActor() const
@@ -492,7 +513,7 @@ class MeanFactory : public Factory
 {
 public:
     MeanFactory(StudentWorld* sp, double startX, double startY) : Factory(sp, startX, startY) {}
-    
+private:
     virtual Actor* NewActor() const;
 };
 

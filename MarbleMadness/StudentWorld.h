@@ -49,9 +49,8 @@ public:
     bool SquareWalkable(double x, double y) const;
     void LeaveSquare(Actor* a);
     void OccupySquare(Actor* a);
-    bool SquarePushable(double x, double y) const;
-    bool TryToPush();
-    bool MarbleWithPit(Pit* p);
+    bool PushMarble(Marble* m, int dir);
+    bool PlayerTryToPush();
     bool SquareAttackable(double x, double y) const;
     bool HasSuchOccupant(double x, double y, int status) const;
 
@@ -79,8 +78,7 @@ private:
         void OccupySquare(int col, int row, int status);
         void LeaveSquare(int col, int row, int status);
         bool SquareWalkable(int col, int row) const;
-        bool SquarePushable(int col, int row) const;
-        bool MarbleWithPit(int col, int row) const;
+        int SquarePossiblyPushable(int col, int row) const;
         bool SquareAttackable(int col, int row) const;
         bool HasSuchOccupant(int col, int row, int status) const;
         std::list<int>* m_occupancyMap[VIEW_HEIGHT][VIEW_WIDTH];
@@ -90,7 +88,6 @@ private:
     };
     GameMap m_grid;
     
-    void SwallowMarble(double x, double y);
     void ConvertCoords(double x, double y, int& row, int& col) const;
     void GetLevelFileName(std::string& s) const;
     void RemoveDead();
