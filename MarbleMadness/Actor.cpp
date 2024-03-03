@@ -42,7 +42,7 @@ int Actor::doSomething()
 void Actor::HandleDeath()
 {
     GetWorld()->LeaveSquare(this);
-    Die();
+    m_isDead = true;
     PlayDeadSound();
     GetWorld()->increaseScore(GetXPValue());
 }
@@ -157,7 +157,7 @@ void Player::PlayerFire()
     if(m_nPeas > 0)
     {
         Attack();
-        DecPeas();
+        m_nPeas--;
     }
     else
         std::cerr << "out of ammo!\n";
@@ -333,7 +333,7 @@ bool ThiefBot::StealGoodie()
 {
     if(m_stolenGoodie == nullptr)
     {
-        Actor* goodieFound = GetWorld()->GoodieHere(getX(), getY());   // try to pick up a goodie
+        Actor* goodieFound = GetWorld()->GetGoodieHere(getX(), getY());   // try to pick up a goodie
         if(goodieFound != nullptr)   // picked up a goodie
         {
             m_stolenGoodie = goodieFound;
@@ -449,7 +449,7 @@ void Exit::PlayDeadSound() const
 
 int Exit::doSomethingSpecific()
 {
-    if(!isVisible() && !GetWorld()->CrystalsLeft()) // no crystals left
+    if(!isVisible() && !GetWorld()->AreCrystalsLeft()) // no crystals left
     {
         setVisible(true);
         GetWorld()->playSound(SOUND_REVEAL_EXIT);
@@ -488,7 +488,7 @@ AmmoGoodie::AmmoGoodie(StudentWorld* sp, double startX, double startY) : Goodie(
 
 void AmmoGoodie::GiveSpecificBenefit()
 {
-    GetWorld()->GivePlayerPeas();
+    GetWorld()->GivePlayerPeas(this);
 }
 
 // Extra Life Goodie Implementations
@@ -507,7 +507,7 @@ RestoreHealthGoodie::RestoreHealthGoodie(StudentWorld* sp, double startX, double
 
 void RestoreHealthGoodie::GiveSpecificBenefit()
 {
-    GetWorld()->RestorePlayerHealth();
+    GetWorld()->RestorePlayerHealth(this);
 }
 
 // Crystal Implementations

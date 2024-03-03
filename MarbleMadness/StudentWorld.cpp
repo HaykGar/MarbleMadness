@@ -110,7 +110,7 @@ int StudentWorld::init()
                         OccupySquare(m_player);
                         break;
                     default:
-                        std::cout << "ankap gyada\n";
+                        std::cout << "unexpected actor, none of the above\n";
                 }
             }
         }
@@ -192,8 +192,6 @@ void StudentWorld::AddActor(Actor* a)
 
 void StudentWorld::UpdateGameText() // inefficient, fix later
 {
-//    if(m_player == nullptr)
-//        return;
     std::ostringstream text;
     text << "Score: " << setw(7);
     text.fill('0');
@@ -271,9 +269,9 @@ bool StudentWorld::CanWalk(Actor* a) const
     }
 }
 
-Actor* StudentWorld::GoodieHere(double x, double y)
+Actor* StudentWorld::GetGoodieHere(double x, double y)
 {
-    if(HasSuchOccupant(x, y, Actor::OC_NON_BARRIER))
+    if(HasSuchOccupant(x, y, Actor::OC_NON_BARRIER))    // goodie or crystal
     {
         for(int i = 0; i < m_Actors.size(); i++)
         {
@@ -287,7 +285,7 @@ Actor* StudentWorld::GoodieHere(double x, double y)
                     LeaveSquare(m_Actors[i]);
                     m_Actors[i]->SetPos(0 ,0);
                     m_Actors[i]->setVisible(false);
-                    m_Actors.erase(m_Actors.begin()+i); // remove this goodie from Actors vector so it will not be part of the game
+                    m_Actors.erase(m_Actors.begin()+i);
                 }
                 return stolen;
             }

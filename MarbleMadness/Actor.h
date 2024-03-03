@@ -53,7 +53,6 @@ class Actor : public GraphObject
         StudentWorld* GetWorld() const;
         virtual int GetXPValue() const;
         bool isDead() const;
-        void Die();
         void HandleDeath();
     
         virtual bool Pushable() const;
@@ -119,10 +118,6 @@ inline bool Actor::isDead() const
     return m_isDead;
 }
 
-inline void Actor::Die()
-{
-    m_isDead = true;
-}
 
 inline bool Actor::Pushable() const
 {
@@ -165,8 +160,8 @@ class Exit : public Actor
     public:
     
     Exit(StudentWorld* sp, double startX, double startY);
-    virtual void PlayDeadSound() const;
 private:
+    virtual void PlayDeadSound() const;
     virtual int doSomethingSpecific();
 };
 
@@ -177,10 +172,10 @@ class Goodie : public Actor
 public:
     Goodie(StudentWorld* sp, int imageID, double startX, double startY, int xp);
     virtual ~Goodie() {}
-    virtual void PlayDeadSound() const;
     virtual bool isStealableGoodie() const;
     
 private:
+    virtual void PlayDeadSound() const;
     virtual void GiveSpecificBenefit() = 0;
     virtual int doSomethingSpecific();
 };
@@ -313,11 +308,13 @@ class SentientActor : public KillableActor  // player and Robots... specific sha
         SentientActor(int health, StudentWorld* sp, int imageID, double startX, double startY, int ocStat, int dir, int xp);
         virtual ~SentientActor() {}
     
-        void Attack();          
         bool Move();
-        virtual bool WalkCondition();
         virtual void getAttacked();
     
+    protected:
+        virtual bool WalkCondition();
+        void Attack();
+
     private:
         virtual void PlayAttackedSound() const = 0;
         virtual void PlayFireSound() const = 0;
@@ -332,24 +329,22 @@ public:
     
     virtual void PlayDeadSound() const;
     void AddPeas(int amount);
-    void DecPeas();
     int GetCurrentAmmo() const;
-    void PlayerFire();
     
+protected:
     virtual bool WalkCondition();
     
 private:
     int m_nPeas;
+    
     virtual int doSomethingSpecific();
     virtual void PlayAttackedSound () const;
     virtual void PlayFireSound() const;
+    void PlayerFire();
+
 
 };
 
-inline void Player::DecPeas()
-{
-    m_nPeas--;
-}
 
 inline int Player::GetCurrentAmmo() const
 {
@@ -371,11 +366,8 @@ public:
     
     const int MIN_TICKS_PER_ACTION = 3;
     
-    bool NeedsToRest() const;
+protected:
     bool ShootPlayer();
-    
-    virtual void PlayDeadSound() const;
-    
     
 private:
     unsigned int m_ticksWaited;
@@ -383,7 +375,9 @@ private:
     
     virtual void PlayAttackedSound() const;
     virtual void PlayFireSound() const;
+    virtual void PlayDeadSound() const;
     virtual int doSomethingSpecific();
+    bool NeedsToRest() const;
     virtual void SpecialRobotAction() = 0;
 };
 
@@ -421,21 +415,13 @@ public:
     ThiefBot(StudentWorld* sp, double startX, double startY);
     
     virtual bool isThief() const;
-    
-    int GetTravelled() const;
-    int GetToTurn() const;
-    
-    void SetTravelled(int amt);
-    void SetToTurn(int amt);
-    
     virtual Actor* StolenGoodie() const;
-    
     virtual void getAttacked();
     
+protected:
     bool StealGoodie();
-    void ChangeDirection();
     virtual void SpecialRobotAction();
-
+    
 private:
     int m_dTravelled;
     int m_dToTurn;
@@ -443,32 +429,13 @@ private:
     Actor* m_stolenGoodie;
     
     void ShuffleDirs();
-    
+    void ChangeDirection();
 };
 
 inline bool ThiefBot::isThief() const
 {
     return true;
 }
-
-
-inline int ThiefBot::GetTravelled() const
-{
-    return m_dTravelled;
-}
-inline int ThiefBot::GetToTurn() const
-{
-    return m_dToTurn;
-}
-inline void ThiefBot::SetTravelled(int amt)
-{
-    m_dTravelled = amt;
-}
-inline void ThiefBot::SetToTurn(int amt)
-{
-    m_dToTurn = amt;
-}
-
 
 // Mean ThiefBot:
 
