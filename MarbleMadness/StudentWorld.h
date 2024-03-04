@@ -99,7 +99,7 @@ private:
 
 inline void StudentWorld::DecCrystals(Crystal* c)
 {
-    if(c->isDead())
+    if(c != nullptr && c->isDead())
         m_nCrystals--;
     else{
         std::cerr << "nCrystals should only be decremented when on is removed from the game\n";
@@ -113,12 +113,17 @@ inline bool StudentWorld::AreCrystalsLeft() const
 
 inline bool StudentWorld::SamePosAsPlayer(Actor *a) const
 {
-    return (AreEqual(a->getX(), m_player->getX()) && AreEqual(a->getY(), m_player->getY()));
+    if(a != nullptr)
+        return (AreEqual(a->getX(), m_player->getX()) && AreEqual(a->getY(), m_player->getY()));
+    else{
+        return false;
+        std::cerr << "Invalid argument, null pointer\n";
+    }
 }
 
 inline void StudentWorld::GivePlayerPeas(AmmoGoodie* a)
 {
-    if(a->isDead())
+    if(a != nullptr && a->isDead())
         m_player->AddPeas(AMMO_EXTRA_PEAS);
     else
         std::cerr << "Error giving ammo, goodie is still alive\n";
@@ -126,7 +131,7 @@ inline void StudentWorld::GivePlayerPeas(AmmoGoodie* a)
 
 inline void StudentWorld::RestorePlayerHealth(RestoreHealthGoodie* r)
 {
-    if(r->isDead())
+    if(r != nullptr && r->isDead())
         m_player->SetHealth(START_PLAYER_HEALTH);
     else
         std::cerr << "Error restoring health, goodie is still alive\n";

@@ -141,8 +141,6 @@ int StudentWorld::move()
 {
     UpdateGameText();
 
-//    size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
-    m_player->doSomething();
     for(size_t i = 0; i < m_Actors.size() && !m_player->isDead(); i++) // leave loop if player dies
     {
         int actionResult = m_Actors[i]->doSomething();
@@ -152,6 +150,7 @@ int StudentWorld::move()
             return GWSTATUS_FINISHED_LEVEL;    // exit returns level won status
         }
     }
+    m_player->doSomething();
             
     
     if(m_player->isDead())
@@ -208,7 +207,7 @@ void StudentWorld::AddActor(Actor* a)
     OccupySquare(a);
 }
 
-void StudentWorld::UpdateGameText() // inefficient, fix later
+void StudentWorld::UpdateGameText() 
 {
     std::ostringstream text;
     text << "Score: " << setw(7);
