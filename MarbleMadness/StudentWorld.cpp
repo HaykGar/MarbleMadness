@@ -141,9 +141,9 @@ int StudentWorld::move()
 {
     UpdateGameText();
 
-    size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
+//    size_t size = m_Actors.size();  // don't give new peas a chance to move on their first tick
     m_player->doSomething();
-    for(size_t i = 0; i < size && !m_player->isDead(); i++) // leave loop if player dies
+    for(size_t i = 0; i < m_Actors.size() && !m_player->isDead(); i++) // leave loop if player dies
     {
         int actionResult = m_Actors[i]->doSomething();
         if( actionResult == GWSTATUS_FINISHED_LEVEL)
@@ -347,7 +347,9 @@ void StudentWorld::FireFrom(Actor* a)
     int dir = a->getDirection();
     std::function<void(double&, double&)> modifyParams = modifyParamFunction(dir);
     modifyParams(x, y);
-    AddActor(new Pea(this, x, y, dir));
+    Actor* pea = new Pea(this, x, y, dir);
+    m_Actors.insert(m_Actors.begin(), pea);
+    OccupySquare(pea);
 }
 
 

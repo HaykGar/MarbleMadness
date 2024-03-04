@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <vector>
 #include <list>
+#include <functional>
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
